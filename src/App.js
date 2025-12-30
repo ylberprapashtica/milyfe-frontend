@@ -1,28 +1,45 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState } from 'react';
+import './App.scss';
 
 function App() {
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
-  
+  const [thought, setThought] = useState('');
+
+  const handleSave = () => {
+    if (thought.trim()) {
+      // TODO: Implement save functionality
+      console.log('Saving thought:', thought);
+      setThought('');
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    }
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          API URL: <code>{apiUrl}</code>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <div className="App-container">
+        <h1 className="App-title">Save Your Thought</h1>
+        <div className="App-input-container">
+          <input
+            type="text"
+            className="App-input"
+            placeholder="Enter your thought..."
+            value={thought}
+            onChange={(e) => setThought(e.target.value)}
+            onKeyPress={handleKeyPress}
+          />
+          <button
+            className="App-button"
+            onClick={handleSave}
+            disabled={!thought.trim()}
+          >
+            Save the thought
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

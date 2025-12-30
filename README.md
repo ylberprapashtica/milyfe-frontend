@@ -1,3 +1,27 @@
+# Milyfe Frontend Microservice
+
+This is the frontend microservice for the Milyfe application, built with React.
+
+## Docker Compose
+
+This microservice includes its own `docker-compose.yml` file that can be used to run the frontend independently:
+
+```bash
+docker-compose up -d
+```
+
+This will start:
+- **Frontend**: React development server on port 3000
+
+### Services
+
+- **Frontend**: `milyfe_frontend_app` on port 3000
+
+### Environment Variables
+
+- `REACT_APP_API_URL`: Backend API URL (default: `http://localhost:8080/api`)
+- `HOST`: Server host (default: `0.0.0.0`)
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

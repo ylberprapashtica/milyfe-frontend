@@ -180,3 +180,144 @@ $black: #000000;
   }
 }
 
+.App-error {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  color: rgba(220, 53, 69, 0.9);
+  font-size: 14px;
+  text-align: center;
+}
+
+.App-loading,
+.App-empty {
+  text-align: center;
+  padding: 20px;
+  color: rgba($chinese-violet, 0.7);
+  font-size: 14px;
+}
+
+.App-captures {
+  margin-top: 40px;
+}
+
+.App-captures-title {
+  color: rgba($deep-koamaru, 0.85);
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba($white, 0.8);
+}
+
+.App-captures-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.App-capture-item {
+  background: rgba($white, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba($white, 0.5);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 
+    inset 0 1px 0 0 rgba($white, 0.6),
+    0 2px 8px 0 rgba($chinese-violet, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: rgba($white, 0.7);
+    box-shadow: 
+      inset 0 1px 0 0 rgba($white, 0.7),
+      0 4px 12px 0 rgba($chinese-violet, 0.15);
+  }
+}
+
+.App-capture-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.App-capture-thought {
+  color: rgba($deep-koamaru, 0.9);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+  word-wrap: break-word;
+}
+
+.App-capture-date {
+  color: rgba($chinese-violet, 0.6);
+  font-size: 12px;
+}
+
+.App-capture-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.App-input-edit {
+  margin: 0;
+}
+
+.App-capture-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.App-button-small {
+  padding: 8px 16px;
+  font-size: 14px;
+  min-width: 70px;
+}
+
+.App-button-save {
+  background: rgba($pastel-blue, 0.8);
+  color: rgba($deep-koamaru, 0.9);
+  
+  &:hover:not(:disabled) {
+    background: rgba($pastel-blue, 0.9);
+  }
+}
+
+.App-button-edit {
+  background: rgba($pastel-blue, 0.8);
+  color: rgba($deep-koamaru, 0.9);
+  
+  &:hover:not(:disabled) {
+    background: rgba($pastel-blue, 0.9);
+  }
+}
+
+.App-button-cancel {
+  background: rgba($white, 0.6);
+  color: rgba($deep-koamaru, 0.7);
+  
+  &:hover:not(:disabled) {
+    background: rgba($white, 0.7);
+  }
+}
+
+.App-button-delete {
+  background: rgba(220, 53, 69, 0.1);
+  color: rgba(220, 53, 69, 0.9);
+  border-color: rgba(220, 53, 69, 0.3);
+  
+  &:hover:not(:disabled) {
+    background: rgba(220, 53, 69, 0.15);
+    border-color: rgba(220, 53, 69, 0.4);
+  }
+}
+

@@ -1,27 +1,106 @@
+// Color variables
+$chinese-violet: #805A8A;
+$deep-koamaru: #2D2F66;
+$pastel-blue: #7cb2cb;
+$white: #FFFFFF;
+$black: #000000;
+
 .App {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
+  position: relative;
+  overflow: hidden;
+  
+  // Base balloon interior gradient - using the three specified colors
+  background: radial-gradient(
+    circle at 30% 40%,
+    rgba($pastel-blue, 0.65) 0%,
+    rgba($chinese-violet, 0.8) 30%,
+    rgba($deep-koamaru, 0.55) 60%,
+    rgba($chinese-violet, 0.5) 85%,
+    rgba($deep-koamaru, 0.45) 100%
+  );
+  
+  // Additional layers to create balloon interior depth
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle at 70% 60%,
+      rgba($chinese-violet, 0.8) 0%,
+      rgba($pastel-blue, 0.55) 30%,
+      rgba($deep-koamaru, 0.5) 60%,
+      rgba($chinese-violet, 0.45) 85%,
+      transparent 100%
+    );
+    animation: float 25s infinite ease-in-out;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -30%;
+    width: 150%;
+    height: 150%;
+    background: radial-gradient(
+      circle at 50% 50%,
+      rgba($deep-koamaru, 0.55) 0%,
+      rgba($chinese-violet, 0.9) 30%,
+      rgba($pastel-blue, 0.45) 60%,
+      rgba($deep-koamaru, 0.4) 85%,
+      transparent 100%
+    );
+    animation: float 30s infinite ease-in-out reverse;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(0px, 30px) scale(1.05);
+    }
+  }
 }
 
 .App-container {
-  background: white;
-  border-radius: 16px;
+  background: rgba($white, 0.75);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border-radius: 24px;
   padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    0 8px 32px 0 rgba($deep-koamaru, 0.2),
+    inset 0 1px 0 0 rgba($white, 0.6),
+    0 0 0 1px rgba($white, 0.3);
+  border: 1px solid rgba($white, 0.5);
   max-width: 600px;
   width: 100%;
+  position: relative;
+  z-index: 1;
+  animation: float 20s infinite ease-in-out;
 }
 
 .App-title {
   text-align: center;
-  color: #333;
+  color: rgba($deep-koamaru, 0.85);
   margin-bottom: 30px;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 600;
+  text-shadow: 0 1px 3px rgba($white, 0.8);
+  letter-spacing: -0.5px;
 }
 
 .App-input-container {
@@ -32,42 +111,72 @@
 
 .App-input {
   width: 100%;
-  padding: 16px;
+  padding: 16px 20px;
   font-size: 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  background: rgba($white, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba($white, 0.6);
+  border-radius: 16px;
   outline: none;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
   box-sizing: border-box;
-}
-
-.App-input:focus {
-  border-color: #667eea;
+  color: rgba($deep-koamaru, 0.9);
+  box-shadow: 
+    inset 0 2px 4px 0 rgba($black, 0.05),
+    0 2px 8px 0 rgba($chinese-violet, 0.15);
+  
+  &::placeholder {
+    color: rgba($chinese-violet, 0.5);
+  }
+  
+  &:focus {
+    background: rgba($white, 0.9);
+    border-color: rgba($white, 0.8);
+    box-shadow: 
+      inset 0 2px 4px 0 rgba($black, 0.05),
+      0 4px 16px 0 rgba($chinese-violet, 0.2),
+      0 0 0 4px rgba($white, 0.3);
+    transform: translateY(-1px);
+  }
 }
 
 .App-button {
   padding: 16px 32px;
   font-size: 16px;
   font-weight: 600;
-  color: white;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 8px;
+  color: rgba($deep-koamaru, 0.9);
+  background: rgba($white, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba($white, 0.6);
+  border-radius: 16px;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.App-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-}
-
-.App-button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.App-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 4px 16px 0 rgba($chinese-violet, 0.2),
+    inset 0 1px 0 0 rgba($white, 0.6);
+  text-shadow: 0 1px 2px rgba($white, 0.8);
+  
+  &:hover:not(:disabled) {
+    background: rgba($white, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 8px 24px 0 rgba($chinese-violet, 0.25),
+      inset 0 1px 0 0 rgba($white, 0.7);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 
+      0 2px 8px 0 rgba($chinese-violet, 0.2),
+      inset 0 1px 0 0 rgba($white, 0.6);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba($white, 0.5);
+  }
 }
 

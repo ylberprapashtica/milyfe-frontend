@@ -25,7 +25,7 @@ function App() {
   return (
     <div className="App">
       <div className="App-container">
-        <h1 className="App-title">Save Your Thought</h1>
+        <h1 className="App-title">Write your Thought</h1>
         <div className="App-input-container">
           <input
             type="text"
@@ -40,7 +40,7 @@ function App() {
             onClick={handleSave}
             disabled={!thought.trim()}
           >
-            Save the thought
+            Capture
           </button>
         </div>
       </div>

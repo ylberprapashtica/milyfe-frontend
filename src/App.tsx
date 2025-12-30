@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, KeyboardEvent, ChangeEvent } from 'react';
 import './App.scss';
 
 function App() {
-  const [thought, setThought] = useState('');
+  const [thought, setThought] = useState<string>('');
 
-  const handleSave = () => {
+  const handleSave = (): void => {
     if (thought.trim()) {
       // TODO: Implement save functionality
       console.log('Saving thought:', thought);
@@ -12,10 +12,14 @@ function App() {
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
       handleSave();
     }
+  };
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setThought(e.target.value);
   };
 
   return (
@@ -28,8 +32,8 @@ function App() {
             className="App-input"
             placeholder="Enter your thought..."
             value={thought}
-            onChange={(e) => setThought(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
           />
           <button
             className="App-button"
@@ -45,3 +49,4 @@ function App() {
 }
 
 export default App;
+

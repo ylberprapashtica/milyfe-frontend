@@ -13,6 +13,9 @@ services:
     environment:
       - REACT_APP_API_URL=http://localhost:8080/api
       - HOST=0.0.0.0
+    depends_on:
+      nginx:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
@@ -20,9 +23,9 @@ services:
       retries: 3
     restart: unless-stopped
     networks:
-      - frontend_network
+      - milyfe_network
 
 networks:
-  frontend_network:
+  milyfe_network:
     driver: bridge
 

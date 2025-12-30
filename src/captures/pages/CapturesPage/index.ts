@@ -1,0 +1,2 @@
+export { CapturesPage } from './CapturesPage';
+

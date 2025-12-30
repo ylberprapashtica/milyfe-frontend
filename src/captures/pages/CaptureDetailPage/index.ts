@@ -1,0 +1,2 @@
+export { CaptureDetailPage } from './CaptureDetailPage';
+

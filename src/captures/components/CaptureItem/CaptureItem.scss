@@ -1,0 +1,187 @@
+// Color variables
+$chinese-violet: #805A8A;
+$deep-koamaru: #2D2F66;
+$pastel-blue: #7cb2cb;
+$white: #FFFFFF;
+$black: #000000;
+
+.capture-item {
+  background: rgba($white, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba($white, 0.5);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 
+    inset 0 1px 0 0 rgba($white, 0.6),
+    0 2px 8px 0 rgba($chinese-violet, 0.1);
+  transition: all 0.3s ease;
+  list-style: none;
+  
+  &:hover {
+    background: rgba($white, 0.7);
+    box-shadow: 
+      inset 0 1px 0 0 rgba($white, 0.7),
+      0 4px 12px 0 rgba($chinese-violet, 0.15);
+  }
+}
+
+.capture-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.capture-item-thought {
+  color: rgba($deep-koamaru, 0.9);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+  word-wrap: break-word;
+}
+
+.capture-item-date {
+  color: rgba($chinese-violet, 0.6);
+  font-size: 12px;
+}
+
+.capture-item-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.capture-item-input {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 16px;
+  background: rgba($white, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba($white, 0.6);
+  border-radius: 16px;
+  outline: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  color: rgba($deep-koamaru, 0.9);
+  box-shadow: 
+    inset 0 2px 4px 0 rgba($black, 0.05),
+    0 2px 8px 0 rgba($chinese-violet, 0.15);
+  
+  &::placeholder {
+    color: rgba($chinese-violet, 0.5);
+  }
+  
+  &:focus {
+    background: rgba($white, 0.9);
+    border-color: rgba($white, 0.8);
+    box-shadow: 
+      inset 0 2px 4px 0 rgba($black, 0.05),
+      0 4px 16px 0 rgba($chinese-violet, 0.2),
+      0 0 0 4px rgba($white, 0.3);
+    transform: translateY(-1px);
+  }
+}
+
+.capture-item-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.capture-item-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 70px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid rgba($white, 0.6);
+  text-shadow: 0 1px 2px rgba($white, 0.8);
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.capture-item-button-save,
+.capture-item-button-edit {
+  color: rgba($deep-koamaru, 0.9);
+  background: rgba($pastel-blue, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 
+    0 4px 16px 0 rgba($chinese-violet, 0.2),
+    inset 0 1px 0 0 rgba($white, 0.6);
+  
+  &:hover:not(:disabled) {
+    background: rgba($pastel-blue, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 8px 24px 0 rgba($chinese-violet, 0.25),
+      inset 0 1px 0 0 rgba($white, 0.7);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 
+      0 2px 8px 0 rgba($chinese-violet, 0.2),
+      inset 0 1px 0 0 rgba($white, 0.6);
+  }
+}
+
+.capture-item-button-cancel {
+  color: rgba($deep-koamaru, 0.7);
+  background: rgba($white, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 
+    0 4px 16px 0 rgba($chinese-violet, 0.2),
+    inset 0 1px 0 0 rgba($white, 0.6);
+  
+  &:hover:not(:disabled) {
+    background: rgba($white, 0.7);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 8px 24px 0 rgba($chinese-violet, 0.25),
+      inset 0 1px 0 0 rgba($white, 0.7);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 
+      0 2px 8px 0 rgba($chinese-violet, 0.2),
+      inset 0 1px 0 0 rgba($white, 0.6);
+  }
+}
+
+.capture-item-button-delete {
+  color: rgba(220, 53, 69, 0.9);
+  background: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 
+    0 4px 16px 0 rgba($chinese-violet, 0.2),
+    inset 0 1px 0 0 rgba($white, 0.6);
+  
+  &:hover:not(:disabled) {
+    background: rgba(220, 53, 69, 0.15);
+    border-color: rgba(220, 53, 69, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 8px 24px 0 rgba($chinese-violet, 0.25),
+      inset 0 1px 0 0 rgba($white, 0.7);
+  }
+  
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 
+      0 2px 8px 0 rgba($chinese-violet, 0.2),
+      inset 0 1px 0 0 rgba($white, 0.6);
+  }
+}
+

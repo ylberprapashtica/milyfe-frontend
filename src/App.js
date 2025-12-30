@@ -2,12 +2,17 @@ import logo from './logo.svg';
 import './App.css';
 
 function App() {
+  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+  
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>
           Edit <code>src/App.js</code> and save to reload.
+        </p>
+        <p>
+          API URL: <code>{apiUrl}</code>
         </p>
         <a
           className="App-link"

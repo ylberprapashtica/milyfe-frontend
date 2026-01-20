@@ -10,6 +10,8 @@ import {
   useNodesState,
   useEdgesState,
   ConnectionMode,
+  Handle,
+  Position,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { capturesApi, GraphData } from '../../../services/api';
@@ -39,6 +41,7 @@ interface NoteNodeData extends Record<string, unknown> {
 const NoteNode = ({ data }: { data: NoteNodeData }) => {
   return (
     <div className="graph-node">
+      <Handle type="target" position={Position.Top} />
       <div className="graph-node-title">{data.label}</div>
       {data.tags && data.tags.length > 0 && (
         <div className="graph-node-tags">
@@ -49,6 +52,7 @@ const NoteNode = ({ data }: { data: NoteNodeData }) => {
           ))}
         </div>
       )}
+      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 };
@@ -89,6 +93,25 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
   }, [navigate]);
 
   /**
+   * Handle node drag stop to save position
+   */
+  const onNodeDragStop = useCallback(async (_event: React.MouseEvent, node: Node<NoteNodeData>) => {
+    const captureId = node.data?.captureId;
+    if (captureId && node.position) {
+      try {
+        await capturesApi.updateCapturePosition(
+          captureId,
+          node.position.x,
+          node.position.y
+        );
+      } catch (err) {
+        console.error('Error saving node position:', err);
+        // Don't show error to user as it's a background operation
+      }
+    }
+  }, []);
+
+  /**
    * Load graph data from API
    */
   const loadGraphData = useCallback(async (): Promise<void> => {
@@ -106,13 +129,29 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         data: node.data as NoteNodeData,
       }));
 
-      const flowEdges: Edge[] = graphData.edges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        type: 'smoothstep' as const,
-        animated: true,
-      }));
+      // Create a Set of all valid node IDs for edge validation
+      const validNodeIds = new Set(flowNodes.map((node) => node.id));
+
+      // Convert edges and validate they reference existing nodes
+      const flowEdges: Edge[] = graphData.edges
+        .filter((edge) => {
+          // Validate edge has valid source and target (not null/undefined)
+          return (
+            edge.source &&
+            edge.target &&
+            typeof edge.source === 'string' &&
+            typeof edge.target === 'string' &&
+            validNodeIds.has(edge.source) &&
+            validNodeIds.has(edge.target)
+          );
+        })
+        .map((edge) => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          type: 'smoothstep' as const,
+          animated: true,
+        }));
 
       // Apply tag filter if provided
       let filteredNodes: Node<NoteNodeData>[] = flowNodes;
@@ -129,6 +168,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         );
 
         filteredNodes = flowNodes.filter((node) => nodeIdsWithTags.has(node.id));
+        // Filter edges to only include those where both source and target exist in filtered nodes
         filteredEdges = flowEdges.filter(
           (edge) =>
             nodeIdsWithTags.has(edge.source) && nodeIdsWithTags.has(edge.target)
@@ -178,6 +218,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         fitView

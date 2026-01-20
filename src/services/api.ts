@@ -325,6 +325,28 @@ export const capturesApi = {
     const response = await apiClient.get<GraphData>('/captures/graph');
     return response.data;
   },
+
+  /**
+   * Update the graph position of a capture
+   * 
+   * Makes a PUT request to `/api/captures/{id}/position` to update the x and y coordinates
+   * of a capture in the graph view.
+   * 
+   * @param {number} id - The unique identifier of the capture
+   * @param {number} x - The x coordinate position
+   * @param {number} y - The y coordinate position
+   * @returns {Promise<void>} Promise that resolves when the position is updated
+   * @throws {Error} If the API request fails or capture is not found (404)
+   * 
+   * @example
+   * ```ts
+   * await capturesApi.updateCapturePosition(1, 100, 200);
+   * console.log('Position updated');
+   * ```
+   */
+  updateCapturePosition: async (id: number, x: number, y: number): Promise<void> => {
+    await apiClient.put(`/captures/${id}/position`, { x, y });
+  },
 };
 
 /**

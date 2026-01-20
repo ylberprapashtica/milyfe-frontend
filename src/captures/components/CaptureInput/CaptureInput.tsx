@@ -1,4 +1,4 @@
-import { useState, KeyboardEvent, ChangeEvent, ReactElement, useRef } from 'react';
+import { useState, KeyboardEvent, ChangeEvent, ReactElement, useRef, useEffect } from 'react';
 import { Input } from '../../../components/ui/Input';
 import { Textarea } from '../../../components/ui/Textarea';
 import { Button } from '../../../components/ui/Button';
@@ -17,6 +17,14 @@ export interface CaptureInputProps {
   disabled?: boolean;
   /** Placeholder text for the content textarea */
   placeholder?: string;
+  /** Initial title value (for editing existing captures) */
+  initialTitle?: string;
+  /** Initial content value (for editing existing captures) */
+  initialContent?: string;
+  /** Initial tags value as comma-separated string (for editing existing captures) */
+  initialTags?: string;
+  /** Text to display on the submit button */
+  submitButtonText?: string;
 }
 
 /**
@@ -44,11 +52,28 @@ export const CaptureInput = ({
   onSubmit,
   disabled = false,
   placeholder = 'Write your note here. Use [[double brackets]] to link to other notes...',
+  initialTitle,
+  initialContent,
+  initialTags,
+  submitButtonText = 'Create Note',
 }: CaptureInputProps): ReactElement => {
-  const [title, setTitle] = useState<string>('');
-  const [content, setContent] = useState<string>('');
-  const [tags, setTags] = useState<string>('');
+  const [title, setTitle] = useState<string>(initialTitle || '');
+  const [content, setContent] = useState<string>(initialContent || '');
+  const [tags, setTags] = useState<string>(initialTags || '');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  
+  // Update state when initial values change (e.g., when loading a different capture)
+  useEffect(() => {
+    if (initialTitle !== undefined) {
+      setTitle(initialTitle);
+    }
+    if (initialContent !== undefined) {
+      setContent(initialContent);
+    }
+    if (initialTags !== undefined) {
+      setTags(initialTags);
+    }
+  }, [initialTitle, initialContent, initialTags]);
   
   // Autocomplete hook
   const {
@@ -109,10 +134,12 @@ export const CaptureInput = ({
         tagsArray.length > 0 ? tagsArray : undefined
       );
       
-      // Reset form
-      setTitle('');
-      setContent('');
-      setTags('');
+      // Reset form only if not editing (no initial values)
+      if (!initialContent) {
+        setTitle('');
+        setContent('');
+        setTags('');
+      }
     } catch (err) {
       // Error handling is done by the parent component
       console.error('Error submitting capture:', err);
@@ -194,6 +221,9 @@ export const CaptureInput = ({
             visible={autocompleteVisible}
           />
         )}
+        <div className="capture-input-hint">
+          Tip: Use [[Note Title]] to create links to other notes. Press Ctrl/Cmd+Enter to submit.
+        </div>
         <Input
           id="capture-title"
           label="Title (optional)"
@@ -203,9 +233,6 @@ export const CaptureInput = ({
           onChange={handleTitleChange}
           disabled={disabled}
         />
-        <div className="capture-input-hint">
-          Tip: Use [[Note Title]] to create links to other notes. Press Ctrl/Cmd+Enter to submit.
-        </div>
       </div>
 
       <Input
@@ -223,7 +250,7 @@ export const CaptureInput = ({
         disabled={!content.trim() || disabled}
         loading={disabled}
       >
-        {disabled ? 'Saving...' : 'Create Note'}
+        {disabled ? 'Saving...' : submitButtonText}
       </Button>
     </div>
   );

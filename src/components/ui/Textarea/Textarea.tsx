@@ -1,4 +1,4 @@
-import { ReactElement, TextareaHTMLAttributes } from 'react';
+import { ReactElement, TextareaHTMLAttributes, forwardRef } from 'react';
 import './Textarea.scss';
 
 /**
@@ -35,13 +35,13 @@ export interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaE
  * />
  * ```
  */
-export const Textarea = ({
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
   id,
   label,
   error,
   className = '',
   ...props
-}: TextareaProps): ReactElement => {
+}, ref): ReactElement => {
   const textareaClasses = [
     'ui-textarea',
     error && 'ui-textarea--error',
@@ -58,6 +58,7 @@ export const Textarea = ({
         </label>
       )}
       <textarea
+        ref={ref}
         id={id}
         className={textareaClasses}
         aria-invalid={error ? 'true' : 'false'}
@@ -71,4 +72,6 @@ export const Textarea = ({
       )}
     </div>
   );
-};
+});
+
+Textarea.displayName = 'Textarea';

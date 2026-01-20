@@ -1,7 +1,10 @@
-import { useState, KeyboardEvent, ChangeEvent, ReactElement } from 'react';
+import { useState, KeyboardEvent, ChangeEvent, ReactElement, useRef } from 'react';
 import { Input } from '../../../components/ui/Input';
 import { Textarea } from '../../../components/ui/Textarea';
 import { Button } from '../../../components/ui/Button';
+import { Autocomplete } from '../../../components/ui/Autocomplete';
+import { useCaptureAutocomplete } from '../../hooks/useCaptureAutocomplete';
+import { Capture } from '../../../services/api';
 import './CaptureInput.scss';
 
 /**
@@ -45,6 +48,20 @@ export const CaptureInput = ({
   const [title, setTitle] = useState<string>('');
   const [content, setContent] = useState<string>('');
   const [tags, setTags] = useState<string>('');
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  
+  // Autocomplete hook
+  const {
+    visible: autocompleteVisible,
+    suggestions,
+    query: autocompleteQuery,
+    selectedIndex,
+    position: autocompletePosition,
+    handleChange: handleAutocompleteChange,
+    handleKeyDown: handleAutocompleteKeyDown,
+    getInsertion,
+    close: closeAutocomplete,
+  } = useCaptureAutocomplete();
 
   /**
    * Handle title input change
@@ -57,7 +74,12 @@ export const CaptureInput = ({
    * Handle content textarea change
    */
   const handleContentChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
-    setContent(e.target.value);
+    const newValue = e.target.value;
+    setContent(newValue);
+    
+    // Handle autocomplete detection
+    const cursorPosition = e.target.selectionStart;
+    handleAutocompleteChange(newValue, cursorPosition, e.target);
   };
 
   /**
@@ -98,28 +120,56 @@ export const CaptureInput = ({
   };
 
   /**
-   * Handle keyboard events in textarea (Ctrl/Cmd+Enter to submit)
+   * Handle keyboard events in textarea (Ctrl/Cmd+Enter to submit, autocomplete navigation)
    */
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
+    // Handle autocomplete keyboard events first
+    const insertion = handleAutocompleteKeyDown(e, content, e.currentTarget.selectionStart);
+    if (insertion) {
+      // Autocomplete handled the event and returned insertion info
+      setContent(insertion.newValue);
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.setSelectionRange(insertion.cursorPosition, insertion.cursorPosition);
+          textareaRef.current.focus();
+        }
+      }, 0);
+      return;
+    }
+    
+    // Handle Ctrl/Cmd+Enter to submit
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
       handleSubmit();
     }
   };
 
+  /**
+   * Handle autocomplete selection
+   */
+  const handleAutocompleteSelect = (capture: Capture): void => {
+    if (!textareaRef.current) return;
+    
+    const textarea = textareaRef.current;
+    const cursorPos = textarea.selectionStart;
+    const insertion = getInsertion(capture, content, cursorPos);
+    
+    setContent(insertion.newValue);
+    
+    // Set cursor position after inserted text
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.setSelectionRange(insertion.cursorPosition, insertion.cursorPosition);
+        textareaRef.current.focus();
+      }
+    }, 0);
+    
+    closeAutocomplete();
+  };
+
   return (
     <div className="capture-input-container">
-      <Input
-        id="capture-title"
-        label="Title (optional)"
-        type="text"
-        placeholder="Note title (auto-extracted from first line if empty)"
-        value={title}
-        onChange={handleTitleChange}
-        disabled={disabled}
-      />
-
-      <div className="capture-input-field">
+      <div className="capture-input-field" style={{ position: 'relative' }}>
         <Textarea
           id="capture-content"
           label="Content *"
@@ -129,6 +179,29 @@ export const CaptureInput = ({
           onKeyDown={handleKeyDown}
           disabled={disabled}
           rows={8}
+          ref={(el) => {
+            textareaRef.current = el;
+          }}
+        />
+        {autocompleteVisible && autocompletePosition && (
+          <Autocomplete
+            suggestions={suggestions}
+            query={autocompleteQuery}
+            selectedIndex={selectedIndex}
+            onSelect={handleAutocompleteSelect}
+            onClose={closeAutocomplete}
+            position={autocompletePosition}
+            visible={autocompleteVisible}
+          />
+        )}
+        <Input
+          id="capture-title"
+          label="Title (optional)"
+          type="text"
+          placeholder="Note title (auto-extracted from first line if empty)"
+          value={title}
+          onChange={handleTitleChange}
+          disabled={disabled}
         />
         <div className="capture-input-hint">
           Tip: Use [[Note Title]] to create links to other notes. Press Ctrl/Cmd+Enter to submit.

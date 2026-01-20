@@ -93,12 +93,48 @@ export interface AuthResponse {
 export interface Capture {
   /** Unique identifier for the capture */
   id: number;
-  /** The thought text content */
-  thought: string;
+  /** The main content text */
+  content: string;
+  /** The title of the capture (optional, auto-extracted from first line if empty) */
+  title: string;
+  /** URL-friendly slug identifier */
+  slug: string;
+  /** Array of tags for categorization */
+  tags: string[];
   /** ISO 8601 timestamp when the capture was created */
   created_at: string;
   /** ISO 8601 timestamp when the capture was last updated */
   updated_at: string;
+  /** Notes that this note links to (optional, loaded with relationships) */
+  links_to?: Capture[];
+  /** Notes that link to this note (optional, loaded with relationships) */
+  linked_from?: Capture[];
+}
+
+/**
+ * Graph data structure for visualization
+ */
+export interface GraphData {
+  /** Array of nodes (notes) */
+  nodes: Array<{
+    id: string;
+    data: {
+      label: string;
+      tags: string[];
+      captureId: number;
+      slug: string;
+    };
+    position: {
+      x: number;
+      y: number;
+    };
+  }>;
+  /** Array of edges (links between notes) */
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+  }>;
 }
 
 /**
@@ -165,43 +201,48 @@ export const capturesApi = {
   /**
    * Create a new capture
    * 
-   * Makes a POST request to `/api/captures` with the thought text.
-   * The API will assign an ID and timestamps automatically.
+   * Makes a POST request to `/api/captures` with the content and optional title/tags.
+   * The API will assign an ID, generate a slug, and set timestamps automatically.
    * 
-   * @param {string} thought - The thought text to capture
+   * @param {string} content - The main content text
+   * @param {string} [title] - Optional title (auto-extracted from first line if not provided)
+   * @param {string[]} [tags] - Optional array of tags
    * @returns {Promise<Capture>} Promise that resolves to the newly created capture
    * @throws {Error} If the API request fails or validation fails (422)
    * 
    * @example
    * ```ts
-   * const newCapture = await capturesApi.createCapture('My new thought');
+   * const newCapture = await capturesApi.createCapture('My new thought', 'My Title', ['tag1', 'tag2']);
    * console.log(`Created capture with ID: ${newCapture.id}`);
    * ```
    */
-  createCapture: async (thought: string): Promise<Capture> => {
-    const response = await apiClient.post<Capture>('/captures', { thought });
+  createCapture: async (content: string, title?: string, tags?: string[]): Promise<Capture> => {
+    const response = await apiClient.post<Capture>('/captures', { content, title, tags });
     return response.data;
   },
 
   /**
    * Update an existing capture
    * 
-   * Makes a PUT request to `/api/captures/{id}` to update the thought text.
+   * Makes a PUT request to `/api/captures/{id}` to update the content, title, and tags.
    * The updated_at timestamp will be automatically updated by the server.
+   * Links will be automatically parsed and synced from the content.
    * 
    * @param {number} id - The unique identifier of the capture to update
-   * @param {string} thought - The new thought text
+   * @param {string} content - The new content text
+   * @param {string} [title] - Optional title (auto-extracted from first line if not provided)
+   * @param {string[]} [tags] - Optional array of tags
    * @returns {Promise<Capture>} Promise that resolves to the updated capture
    * @throws {Error} If the API request fails, capture is not found (404), or validation fails (422)
    * 
    * @example
    * ```ts
-   * const updated = await capturesApi.updateCapture(1, 'Updated thought');
+   * const updated = await capturesApi.updateCapture(1, 'Updated content', 'New Title', ['tag1']);
    * console.log(`Updated at: ${updated.updated_at}`);
    * ```
    */
-  updateCapture: async (id: number, thought: string): Promise<Capture> => {
-    const response = await apiClient.put<Capture>(`/captures/${id}`, { thought });
+  updateCapture: async (id: number, content: string, title?: string, tags?: string[]): Promise<Capture> => {
+    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags });
     return response.data;
   },
 
@@ -222,6 +263,67 @@ export const capturesApi = {
    */
   deleteCapture: async (id: number): Promise<void> => {
     await apiClient.delete(`/captures/${id}`);
+  },
+
+  /**
+   * Search captures by query
+   * 
+   * Makes a GET request to `/api/captures/search?q={query}` to search across titles and content.
+   * 
+   * @param {string} query - The search query string
+   * @returns {Promise<Capture[]>} Promise that resolves to an array of matching captures
+   * @throws {Error} If the API request fails
+   * 
+   * @example
+   * ```ts
+   * const results = await capturesApi.searchCaptures('keyword');
+   * console.log(`Found ${results.length} matches`);
+   * ```
+   */
+  searchCaptures: async (query: string): Promise<Capture[]> => {
+    const response = await apiClient.get<Capture[]>('/captures/search', {
+      params: { q: query },
+    });
+    return response.data;
+  },
+
+  /**
+   * Get linked notes for a capture
+   * 
+   * Makes a GET request to `/api/captures/{id}/links` to get all notes linked from this capture.
+   * 
+   * @param {number} id - The unique identifier of the capture
+   * @returns {Promise<Capture[]>} Promise that resolves to an array of linked captures
+   * @throws {Error} If the API request fails or capture is not found (404)
+   * 
+   * @example
+   * ```ts
+   * const links = await capturesApi.getCaptureLinks(1);
+   * console.log(`This note links to ${links.length} other notes`);
+   * ```
+   */
+  getCaptureLinks: async (id: number): Promise<Capture[]> => {
+    const response = await apiClient.get<Capture[]>(`/captures/${id}/links`);
+    return response.data;
+  },
+
+  /**
+   * Get graph data for visualization
+   * 
+   * Makes a GET request to `/api/captures/graph` to get all notes and links formatted for graph visualization.
+   * 
+   * @returns {Promise<GraphData>} Promise that resolves to graph data with nodes and edges
+   * @throws {Error} If the API request fails
+   * 
+   * @example
+   * ```ts
+   * const graphData = await capturesApi.getGraphData();
+   * console.log(`Graph has ${graphData.nodes.length} nodes and ${graphData.edges.length} edges`);
+   * ```
+   */
+  getGraphData: async (): Promise<GraphData> => {
+    const response = await apiClient.get<GraphData>('/captures/graph');
+    return response.data;
   },
 };
 

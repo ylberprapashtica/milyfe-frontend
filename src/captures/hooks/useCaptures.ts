@@ -14,7 +14,7 @@ export interface UseCapturesReturn {
   /** Function to reload all captures from the API */
   reload: () => Promise<void>;
   /** Function to create a new capture */
-  createCapture: (thought: string) => Promise<void>;
+  createCapture: (content: string, title?: string, tags?: string[]) => Promise<void>;
 }
 
 /**
@@ -63,15 +63,19 @@ export const useCaptures = (): UseCapturesReturn => {
   /**
    * Create a new capture and refresh the list
    */
-  const createCapture = useCallback(async (thought: string): Promise<void> => {
-    if (!thought.trim()) {
+  const createCapture = useCallback(async (
+    content: string,
+    title?: string,
+    tags?: string[]
+  ): Promise<void> => {
+    if (!content.trim()) {
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      await capturesApi.createCapture(thought.trim());
+      await capturesApi.createCapture(content.trim(), title, tags);
       await loadCaptures();
     } catch (err) {
       setError('Failed to save capture. Please try again.');

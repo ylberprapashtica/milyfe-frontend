@@ -6,13 +6,19 @@ describe('CaptureList Component', () => {
   const mockCaptures: Capture[] = [
     {
       id: 1,
-      thought: 'First thought',
+      content: 'First thought',
+      title: 'First Title',
+      slug: 'first-title',
+      tags: [],
       created_at: '2024-01-01T00:00:00.000000Z',
       updated_at: '2024-01-01T00:00:00.000000Z',
     },
     {
       id: 2,
-      thought: 'Second thought',
+      content: 'Second thought',
+      title: 'Second Title',
+      slug: 'second-title',
+      tags: [],
       created_at: '2024-01-02T00:00:00.000000Z',
       updated_at: '2024-01-02T00:00:00.000000Z',
     },

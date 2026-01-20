@@ -6,6 +6,7 @@ import { ProtectedRoute } from './auth/components/ProtectedRoute';
 import { PublicRoute } from './auth/components/PublicRoute';
 import { LoginPage } from './auth/pages/LoginPage';
 import { RegisterPage } from './auth/pages/RegisterPage';
+import { CreateNotePage } from './captures/pages/CreateNotePage';
 import { CapturesPage } from './captures/pages/CapturesPage';
 import { CaptureDetailPage } from './captures/pages/CaptureDetailPage';
 import './App.scss';
@@ -54,6 +55,14 @@ function App(): ReactElement {
               />
               <Route
                 path="/"
+                element={
+                  <ProtectedRoute>
+                    <CreateNotePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/slipbox"
                 element={
                   <ProtectedRoute>
                     <CapturesPage />

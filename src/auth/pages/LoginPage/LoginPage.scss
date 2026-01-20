@@ -39,7 +39,6 @@ $white: #FFFFFF;
       rgba($chinese-violet, 0.45) 85%,
       transparent 100%
     );
-    animation: float 25s infinite ease-in-out;
     pointer-events: none;
     z-index: 0;
   }
@@ -59,18 +58,8 @@ $white: #FFFFFF;
       rgba($deep-koamaru, 0.4) 85%,
       transparent 100%
     );
-    animation: float 30s infinite ease-in-out reverse;
     pointer-events: none;
     z-index: 0;
-  }
-  
-  @keyframes float {
-    0%, 100% {
-      transform: translate(0, 0) scale(1);
-    }
-    50% {
-      transform: translate(0px, 30px) scale(1.05);
-    }
   }
 }
 
@@ -89,7 +78,6 @@ $white: #FFFFFF;
   width: 100%;
   position: relative;
   z-index: 1;
-  animation: float 20s infinite ease-in-out;
 }
 
 .login-page-title {

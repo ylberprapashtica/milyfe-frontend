@@ -10,7 +10,7 @@ export interface CaptureListProps {
   /** Array of captures to display */
   captures: Capture[];
   /** Callback function when a capture is updated */
-  onUpdate: (id: number, thought: string) => Promise<void>;
+  onUpdate: (id: number, content: string, title?: string, tags?: string[]) => Promise<void>;
   /** Callback function when a capture is deleted */
   onDelete: (id: number) => Promise<void>;
   /** Whether the list should be disabled */

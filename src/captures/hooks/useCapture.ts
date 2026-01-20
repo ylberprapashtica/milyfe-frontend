@@ -10,7 +10,7 @@ export interface UseCaptureReturn {
   /** Error message if a request failed, null otherwise */
   error: string | null;
   /** Function to update a capture */
-  updateCapture: (id: number, thought: string) => Promise<void>;
+  updateCapture: (id: number, content: string, title?: string, tags?: string[]) => Promise<void>;
   /** Function to delete a capture */
   deleteCapture: (id: number) => Promise<void>;
 }
@@ -50,18 +50,25 @@ export const useCapture = (): UseCaptureReturn => {
    * Update an existing capture
    * 
    * @param {number} id - The ID of the capture to update
-   * @param {string} thought - The new thought text
+   * @param {string} content - The new content text
+   * @param {string} [title] - Optional title
+   * @param {string[]} [tags] - Optional array of tags
    * @throws {Error} If the update fails
    */
-  const updateCapture = useCallback(async (id: number, thought: string): Promise<void> => {
-    if (!thought.trim()) {
+  const updateCapture = useCallback(async (
+    id: number,
+    content: string,
+    title?: string,
+    tags?: string[]
+  ): Promise<void> => {
+    if (!content.trim()) {
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      await capturesApi.updateCapture(id, thought.trim());
+      await capturesApi.updateCapture(id, content.trim(), title, tags);
     } catch (err) {
       setError('Failed to update capture. Please try again.');
       console.error('Error updating capture:', err);

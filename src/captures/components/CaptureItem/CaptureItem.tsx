@@ -1,5 +1,7 @@
-import { useState, KeyboardEvent, ChangeEvent, ReactElement } from 'react';
+import { ReactElement } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Capture } from '../../types';
+import { renderLinks } from '../../utils/linkParser';
 import './CaptureItem.scss';
 
 /**
@@ -9,7 +11,7 @@ export interface CaptureItemProps {
   /** The capture data to display */
   capture: Capture;
   /** Callback function when a capture is updated */
-  onUpdate: (id: number, thought: string) => Promise<void>;
+  onUpdate: (id: number, content: string, title?: string, tags?: string[]) => Promise<void>;
   /** Callback function when a capture is deleted */
   onDelete: (id: number) => Promise<void>;
   /** Whether the component should be disabled */
@@ -17,11 +19,10 @@ export interface CaptureItemProps {
 }
 
 /**
- * Component for displaying and editing a single capture
+ * Component for displaying a single capture
  * 
- * Displays a capture with edit and delete actions. Supports inline editing
- * with Enter to save and Escape to cancel. Shows a confirmation dialog
- * before deleting.
+ * Displays a capture with title, content (with clickable [[links]]), tags, and actions.
+ * Clicking on the note navigates to the detail page. Links are rendered as clickable buttons.
  * 
  * @param {CaptureItemProps} props - Component props
  * @returns {ReactElement} The rendered capture item component
@@ -30,8 +31,8 @@ export interface CaptureItemProps {
  * ```tsx
  * <CaptureItem
  *   capture={capture}
- *   onUpdate={async (id, thought) => {
- *     await updateCapture(id, thought);
+ *   onUpdate={async (id, content, title, tags) => {
+ *     await updateCapture(id, content, title, tags);
  *   }}
  *   onDelete={async (id) => {
  *     await deleteCapture(id);
@@ -46,123 +47,87 @@ export const CaptureItem = ({
   onDelete,
   disabled = false,
 }: CaptureItemProps): ReactElement => {
-  const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [editingThought, setEditingThought] = useState<string>('');
+  const navigate = useNavigate();
 
   /**
-   * Start editing mode
+   * Handle navigation to detail page
    */
-  const startEdit = (): void => {
-    setIsEditing(true);
-    setEditingThought(capture.thought);
+  const handleClick = (): void => {
+    navigate(`/captures/${capture.id}`);
   };
 
   /**
-   * Cancel editing mode
+   * Handle link click - navigate to the linked note
    */
-  const cancelEdit = (): void => {
-    setIsEditing(false);
-    setEditingThought('');
-  };
-
-  /**
-   * Handle update submission
-   */
-  const handleUpdate = async (): Promise<void> => {
-    if (!editingThought.trim() || disabled) {
-      return;
-    }
-
-    try {
-      await onUpdate(capture.id, editingThought.trim());
-      setIsEditing(false);
-      setEditingThought('');
-    } catch (err) {
-      // Error handling is done by the parent component
-      console.error('Error updating capture:', err);
-    }
+  const handleLinkClick = (linkTitle: string): void => {
+    // Try to find the note by title or slug
+    // For now, navigate to search or we could enhance this to find by slug
+    navigate(`/captures?search=${encodeURIComponent(linkTitle)}`);
   };
 
   /**
    * Handle delete action
    */
-  const handleDelete = async (): Promise<void> => {
-    if (!window.confirm('Are you sure you want to delete this capture?')) {
+  const handleDelete = async (e: React.MouseEvent): Promise<void> => {
+    e.stopPropagation(); // Prevent navigation
+    if (!window.confirm('Are you sure you want to delete this note?')) {
       return;
     }
 
     try {
       await onDelete(capture.id);
     } catch (err) {
-      // Error handling is done by the parent component
       console.error('Error deleting capture:', err);
     }
   };
 
-  /**
-   * Handle keyboard events in edit mode
-   */
-  const handleEditKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
-    if (e.key === 'Enter') {
-      handleUpdate();
-    } else if (e.key === 'Escape') {
-      cancelEdit();
-    }
-  };
-
-  /**
-   * Handle input change in edit mode
-   */
-  const handleEditChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setEditingThought(e.target.value);
-  };
+  const displayTitle = capture.title || capture.content.split('\n')[0]?.substring(0, 100) || 'Untitled';
+  const displayContent = capture.content;
 
   return (
-    <li className="capture-item">
-      {isEditing ? (
-        <div className="capture-item-edit">
-          <input
-            type="text"
-            className="capture-item-input"
-            value={editingThought}
-            onChange={handleEditChange}
-            onKeyDown={handleEditKeyDown}
-            disabled={disabled}
-            autoFocus
-          />
-          <div className="capture-item-actions">
-            <button
-              className="capture-item-button capture-item-button-save"
-              onClick={handleUpdate}
-              disabled={!editingThought.trim() || disabled}
-            >
-              Save
-            </button>
-            <button
-              className="capture-item-button capture-item-button-cancel"
-              onClick={cancelEdit}
-              disabled={disabled}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="capture-item-content">
-            <p className="capture-item-thought">{capture.thought}</p>
+    <div className="capture-item" onClick={handleClick}>
+      <div className="capture-item-header">
+        <h3 className="capture-item-title">{displayTitle}</h3>
             <span className="capture-item-date">
               {new Date(capture.created_at).toLocaleDateString()}
             </span>
           </div>
-          <div className="capture-item-actions">
+
+      <div className="capture-item-content">
+        <div className="capture-item-text">
+          {renderLinks(displayContent, handleLinkClick)}
+        </div>
+      </div>
+
+      {capture.tags && capture.tags.length > 0 && (
+        <div className="capture-item-tags">
+          {capture.tags.map((tag, index) => (
+            <span key={index} className="capture-item-tag">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {capture.links_to && capture.links_to.length > 0 && (
+        <div className="capture-item-links">
+          <span className="capture-item-links-label">Links to:</span>
+          {capture.links_to.map((linkedNote) => (
             <button
-              className="capture-item-button capture-item-button-edit"
-              onClick={startEdit}
-              disabled={disabled}
+              key={linkedNote.id}
+              className="capture-item-link"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/captures/${linkedNote.id}`);
+              }}
             >
-              Edit
+              {linkedNote.title || linkedNote.slug}
             </button>
+          ))}
+        </div>
+      )}
+
+      <div className="capture-item-actions" onClick={(e) => e.stopPropagation()}>
             <button
               className="capture-item-button capture-item-button-delete"
               onClick={handleDelete}
@@ -171,9 +136,7 @@ export const CaptureItem = ({
               Delete
             </button>
           </div>
-        </>
-      )}
-    </li>
+    </div>
   );
 };
 

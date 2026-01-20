@@ -29,7 +29,7 @@ export const CapturesPage = (): ReactElement => {
   const { loading: updateLoading, updateCapture, deleteCapture } = useCapture();
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
   const [filteredCaptures, setFilteredCaptures] = useState<Capture[]>(captures);
-  const [viewMode, setViewMode] = useState<'list' | 'graph'>('list');
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
 
   // Load search query from URL params
   useEffect(() => {
@@ -106,39 +106,31 @@ export const CapturesPage = (): ReactElement => {
 
   return (
     <div className="captures-page">
-      <div className="captures-page-container">
-        <div className="captures-page-header">
+      <div className="captures-page-header">
+        <div className="captures-page-header-content">
+          <button
+            className="captures-page-sidebar-toggle"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          >
+            {sidebarOpen ? '◀' : '▶'}
+          </button>
           <h1 className="captures-page-title">Slipbox</h1>
           
-          <div className="captures-page-controls">
-            <div className="captures-page-search">
-              <input
-                type="text"
-                className="captures-page-search-input"
-                placeholder="Search notes..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-              />
-            </div>
-            
-            <div className="captures-page-view-toggle">
-              <button
-                className={`captures-page-view-button ${viewMode === 'list' ? 'active' : ''}`}
-                onClick={() => setViewMode('list')}
-              >
-                List
-              </button>
-              <button
-                className={`captures-page-view-button ${viewMode === 'graph' ? 'active' : ''}`}
-                onClick={() => setViewMode('graph')}
-              >
-                Graph
-              </button>
-            </div>
+          <div className="captures-page-search">
+            <input
+              type="text"
+              className="captures-page-search-input"
+              placeholder="Search notes..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
           </div>
         </div>
+      </div>
 
-        {viewMode === 'list' ? (
+      <div className="captures-page-layout">
+        <aside className={`captures-page-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
           <CaptureList
             captures={filteredCaptures}
             onUpdate={handleUpdate}
@@ -146,11 +138,11 @@ export const CapturesPage = (): ReactElement => {
             disabled={isLoading}
             loading={loading && filteredCaptures.length === 0}
           />
-        ) : (
-          <div className="captures-page-graph">
-            <GraphView />
-          </div>
-        )}
+        </aside>
+        
+        <div className="captures-page-graph">
+          <GraphView />
+        </div>
       </div>
     </div>
   );

@@ -52,7 +52,7 @@ export const CaptureItem = ({
   /**
    * Handle navigation to detail page
    */
-  const handleClick = (): void => {
+  const handleOpen = (): void => {
     navigate(`/captures/${capture.id}`);
   };
 
@@ -69,7 +69,7 @@ export const CaptureItem = ({
    * Handle delete action
    */
   const handleDelete = async (e: React.MouseEvent): Promise<void> => {
-    e.stopPropagation(); // Prevent navigation
+    e.stopPropagation();
     if (!window.confirm('Are you sure you want to delete this note?')) {
       return;
     }
@@ -85,13 +85,13 @@ export const CaptureItem = ({
   const displayContent = capture.content;
 
   return (
-    <div className="capture-item" onClick={handleClick}>
+    <div className="capture-item">
       <div className="capture-item-header">
         <h3 className="capture-item-title">{displayTitle}</h3>
-            <span className="capture-item-date">
-              {new Date(capture.created_at).toLocaleDateString()}
-            </span>
-          </div>
+        <span className="capture-item-date">
+          {new Date(capture.created_at).toLocaleDateString()}
+        </span>
+      </div>
 
       <div className="capture-item-content">
         <div className="capture-item-text">
@@ -116,10 +116,7 @@ export const CaptureItem = ({
             <button
               key={linkedNote.id}
               className="capture-item-link"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/captures/${linkedNote.id}`);
-              }}
+              onClick={() => navigate(`/captures/${linkedNote.id}`)}
             >
               {linkedNote.title || linkedNote.slug}
             </button>
@@ -127,15 +124,37 @@ export const CaptureItem = ({
         </div>
       )}
 
-      <div className="capture-item-actions" onClick={(e) => e.stopPropagation()}>
+      {capture.linked_from && capture.linked_from.length > 0 && (
+        <div className="capture-item-links">
+          <span className="capture-item-links-label">Linked by:</span>
+          {capture.linked_from.map((linkedNote) => (
             <button
-              className="capture-item-button capture-item-button-delete"
-              onClick={handleDelete}
-              disabled={disabled}
+              key={linkedNote.id}
+              className="capture-item-link"
+              onClick={() => navigate(`/captures/${linkedNote.id}`)}
             >
-              Delete
+              {linkedNote.title || linkedNote.slug}
             </button>
-          </div>
+          ))}
+        </div>
+      )}
+
+      <div className="capture-item-actions">
+        <button
+          className="capture-item-button capture-item-button-open"
+          onClick={handleOpen}
+          disabled={disabled}
+        >
+          Open
+        </button>
+        <button
+          className="capture-item-button capture-item-button-delete"
+          onClick={handleDelete}
+          disabled={disabled}
+        >
+          Delete
+        </button>
+      </div>
     </div>
   );
 };

@@ -26,6 +26,30 @@ $black: #000000;
   }
 }
 
+.capture-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.capture-item-title {
+  color: rgba($deep-koamaru, 0.9);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
+  word-wrap: break-word;
+}
+
+.capture-item-date {
+  color: rgba($chinese-violet, 0.6);
+  font-size: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .capture-item-content {
   display: flex;
   flex-direction: column;
@@ -33,12 +57,65 @@ $black: #000000;
   margin-bottom: 12px;
 }
 
-.capture-item-thought {
+.capture-item-text {
   color: rgba($deep-koamaru, 0.9);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.5;
   margin: 0;
   word-wrap: break-word;
+}
+
+.capture-item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.capture-item-tag {
+  font-size: 12px;
+  padding: 4px 8px;
+  background: rgba($pastel-blue, 0.2);
+  color: rgba($deep-koamaru, 0.8);
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.capture-item-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.capture-item-links-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba($chinese-violet, 0.8);
+  margin-right: 4px;
+}
+
+.capture-item-link {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: rgba($chinese-violet, 0.1);
+  color: rgba($chinese-violet, 0.9);
+  border: 1px solid rgba($chinese-violet, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+
+  &:hover {
+    background: rgba($chinese-violet, 0.2);
+    border-color: rgba($chinese-violet, 0.4);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }
 
 .capture-item-date {
@@ -108,7 +185,8 @@ $black: #000000;
 }
 
 .capture-item-button-save,
-.capture-item-button-edit {
+.capture-item-button-edit,
+.capture-item-button-open {
   color: rgba($deep-koamaru, 0.9);
   background: rgba($pastel-blue, 0.8);
   backdrop-filter: blur(10px);

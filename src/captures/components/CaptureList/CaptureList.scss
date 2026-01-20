@@ -4,16 +4,21 @@ $deep-koamaru: #2D2F66;
 $white: #FFFFFF;
 
 .capture-list {
-  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 20px;
 }
 
 .capture-list-title {
   color: rgba($deep-koamaru, 0.85);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
-  margin-bottom: 20px;
-  text-align: center;
+  margin: 0 0 20px 0;
+  text-align: left;
   text-shadow: 0 1px 2px rgba($white, 0.8);
+  flex-shrink: 0;
 }
 
 .capture-list-items {
@@ -23,13 +28,39 @@ $white: #FFFFFF;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 8px;
+
+  // Custom scrollbar styling
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba($white, 0.2);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba($chinese-violet, 0.3);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba($chinese-violet, 0.5);
+    }
+  }
 }
 
 .capture-list-loading,
 .capture-list-empty {
   text-align: center;
-  padding: 20px;
+  padding: 40px 20px;
   color: rgba($chinese-violet, 0.7);
   font-size: 14px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 

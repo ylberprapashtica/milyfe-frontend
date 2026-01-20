@@ -1,10 +1,11 @@
 import { useState, useEffect, ReactElement, ChangeEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCaptures } from '../../hooks/useCaptures';
 import { useCapture } from '../../hooks/useCapture';
 import { capturesApi, Capture } from '../../../services/api';
 import { CaptureList } from '../../components/CaptureList';
 import { GraphView } from '../../components/GraphView';
+import { Button } from '../../../components/ui/Button';
 import './CapturesPage.scss';
 
 /**
@@ -24,6 +25,7 @@ import './CapturesPage.scss';
  * ```
  */
 export const CapturesPage = (): ReactElement => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { captures, loading, reload } = useCaptures();
   const { loading: updateLoading, updateCapture, deleteCapture } = useCapture();
@@ -102,6 +104,13 @@ export const CapturesPage = (): ReactElement => {
     await reload();
   };
 
+  /**
+   * Handle navigation to create note page
+   */
+  const handleCreateCapture = (): void => {
+    navigate('/');
+  };
+
   const isLoading = loading || updateLoading;
 
   return (
@@ -126,6 +135,14 @@ export const CapturesPage = (): ReactElement => {
               onChange={handleSearchChange}
             />
           </div>
+          <Button
+            onClick={handleCreateCapture}
+            variant="primary"
+            size="medium"
+            className="captures-page-create-button"
+          >
+            Create Capture
+          </Button>
         </div>
       </div>
 

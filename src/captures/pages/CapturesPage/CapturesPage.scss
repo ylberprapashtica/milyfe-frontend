@@ -136,6 +136,11 @@ $white: #FFFFFF;
   }
 }
 
+.captures-page-create-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .captures-page-layout {
   display: flex;
   flex: 1;

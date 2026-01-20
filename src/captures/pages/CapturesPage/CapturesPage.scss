@@ -99,16 +99,6 @@ $white: #FFFFFF;
   }
 }
 
-.captures-page-title {
-  color: rgba($deep-koamaru, 0.85);
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  text-shadow: 0 1px 3px rgba($white, 0.8);
-  letter-spacing: -0.5px;
-  flex-shrink: 0;
-}
-
 .captures-page-search {
   flex: 1;
   max-width: 400px;
@@ -139,6 +129,34 @@ $white: #FFFFFF;
 .captures-page-create-button {
   flex-shrink: 0;
   white-space: nowrap;
+  position: relative;
+  
+  .captures-page-create-button-icon {
+    display: none;
+  }
+  
+  .captures-page-create-button-text {
+    display: inline;
+  }
+  
+  // Responsive: show icon, hide text
+  @media (max-width: 768px) {
+    .captures-page-create-button-text {
+      display: none;
+    }
+    
+    .captures-page-create-button-icon {
+      display: inline;
+      font-size: 20px;
+      font-weight: bold;
+      line-height: 1;
+    }
+    
+    // Make button square-ish in mobile
+    min-width: 40px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
 }
 
 .captures-page-layout {

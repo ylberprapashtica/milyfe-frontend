@@ -222,7 +222,7 @@ export const CaptureInput = ({
           />
         )}
         <div className="capture-input-hint">
-          Tip: Use [[Note Title]] to create links to other notes. Press Ctrl/Cmd+Enter to submit.
+          Tip: Use [[Note Title]] to create links to other notes.
         </div>
         <Input
           id="capture-title"

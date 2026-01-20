@@ -31,7 +31,38 @@ export const CapturesPage = (): ReactElement => {
   const { loading: updateLoading, updateCapture, deleteCapture } = useCapture();
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
   const [filteredCaptures, setFilteredCaptures] = useState<Capture[]>(captures);
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  
+  // Initialize sidebar state based on screen size (collapsed by default on mobile)
+  const getInitialSidebarState = (): boolean => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth > 768;
+    }
+    return true;
+  };
+  
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(getInitialSidebarState());
+
+  // Handle responsive sidebar state
+  useEffect(() => {
+    const handleResize = (): void => {
+      // Auto-collapse on mobile, auto-expand on desktop
+      if (window.innerWidth <= 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    // Listen for resize events
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // Load search query from URL params
   useEffect(() => {
@@ -124,7 +155,6 @@ export const CapturesPage = (): ReactElement => {
           >
             {sidebarOpen ? '◀' : '▶'}
           </button>
-          <h1 className="captures-page-title">Slipbox</h1>
           
           <div className="captures-page-search">
             <input
@@ -140,8 +170,10 @@ export const CapturesPage = (): ReactElement => {
             variant="primary"
             size="medium"
             className="captures-page-create-button"
+            aria-label="Create Capture"
           >
-            Create Capture
+            <span className="captures-page-create-button-text">Create Capture</span>
+            <span className="captures-page-create-button-icon">+</span>
           </Button>
         </div>
       </div>

@@ -1,0 +1,103 @@
+// Color variables
+$chinese-violet: #805A8A;
+$deep-koamaru: #2D2F66;
+$pastel-blue: #7cb2cb;
+$white: #FFFFFF;
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  
+  // Base balloon interior gradient - using the three specified colors
+  background: radial-gradient(
+    circle at 30% 40%,
+    rgba($pastel-blue, 0.65) 0%,
+    rgba($chinese-violet, 0.8) 30%,
+    rgba($deep-koamaru, 0.55) 60%,
+    rgba($chinese-violet, 0.5) 85%,
+    rgba($deep-koamaru, 0.45) 100%
+  );
+  
+  // Additional layers to create balloon interior depth
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle at 70% 60%,
+      rgba($chinese-violet, 0.8) 0%,
+      rgba($pastel-blue, 0.55) 30%,
+      rgba($deep-koamaru, 0.5) 60%,
+      rgba($chinese-violet, 0.45) 85%,
+      transparent 100%
+    );
+    animation: float 25s infinite ease-in-out;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: -30%;
+    right: -30%;
+    width: 150%;
+    height: 150%;
+    background: radial-gradient(
+      circle at 50% 50%,
+      rgba($deep-koamaru, 0.55) 0%,
+      rgba($chinese-violet, 0.9) 30%,
+      rgba($pastel-blue, 0.45) 60%,
+      rgba($deep-koamaru, 0.4) 85%,
+      transparent 100%
+    );
+    animation: float 30s infinite ease-in-out reverse;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(0px, 30px) scale(1.05);
+    }
+  }
+}
+
+.login-page-container {
+  background: rgba($white, 0.75);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 
+    0 8px 32px 0 rgba($deep-koamaru, 0.2),
+    inset 0 1px 0 0 rgba($white, 0.6),
+    0 0 0 1px rgba($white, 0.3);
+  border: 1px solid rgba($white, 0.5);
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  animation: float 20s infinite ease-in-out;
+}
+
+.login-page-title {
+  text-align: center;
+  color: rgba($deep-koamaru, 0.85);
+  margin-bottom: 30px;
+  font-size: 32px;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba($white, 0.8);
+  letter-spacing: -0.5px;
+}

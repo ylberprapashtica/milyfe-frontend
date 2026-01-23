@@ -188,6 +188,27 @@ $white: #FFFFFF;
   &.open {
     transform: translateX(0);
   }
+
+  // Responsive: fixed and full screen
+  @media (max-width: 768px) {
+    position: fixed;
+    top: 88;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh;
+    z-index: 1000;
+    border-right: none;
+    box-shadow: none;
+
+    &.closed {
+      transform: translateX(-100%);
+      width: 100vw !important;
+    }
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
 }
 
 .captures-page-graph {

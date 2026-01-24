@@ -218,21 +218,23 @@ export const capturesService = {
    * Create a link between two captures
    * 
    * Makes a POST request to `/api/captures/links` to create a directional link
-   * from source capture to target capture.
+   * from source capture to target capture. The source capture's content will be
+   * automatically updated to include [[Target Title]] if not already present.
    * 
    * @param {number} sourceId - The ID of the source capture
    * @param {number} targetId - The ID of the target capture
-   * @returns {Promise<{link: {id: number, source_capture_id: number, target_capture_id: number}}>} Promise that resolves with the created link data
+   * @returns {Promise<{link: {id: number, source_capture_id: number, target_capture_id: number}, source_capture: Capture}>} Promise that resolves with the created link data and updated source capture
    * @throws {Error} If the API request fails, captures not found, or validation fails
    * 
    * @example
    * ```ts
    * const result = await capturesService.createLink(1, 2);
    * console.log(`Created link with ID: ${result.link.id}`);
+   * console.log(`Source capture updated: ${result.source_capture.content}`);
    * ```
    */
-  createLink: async (sourceId: number, targetId: number): Promise<{link: {id: number, source_capture_id: number, target_capture_id: number}}> => {
-    const response = await apiClient.post<{link: {id: number, source_capture_id: number, target_capture_id: number}}>('/captures/links', {
+  createLink: async (sourceId: number, targetId: number): Promise<{link: {id: number, source_capture_id: number, target_capture_id: number}, source_capture: Capture}> => {
+    const response = await apiClient.post<{link: {id: number, source_capture_id: number, target_capture_id: number}, source_capture: Capture}>('/captures/links', {
       source_capture_id: sourceId,
       target_capture_id: targetId,
     });

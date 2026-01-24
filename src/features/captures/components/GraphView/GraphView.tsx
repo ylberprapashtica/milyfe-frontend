@@ -187,13 +187,30 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
 
       // Add edge to the graph
       setEdges((eds) => addEdge(newEdge, eds));
+
+      // Update the source node with the updated capture data
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === connection.source) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                content: result.source_capture.content,
+                updated_at: result.source_capture.updated_at,
+              },
+            };
+          }
+          return node;
+        })
+      );
     } catch (err) {
       console.error('Error creating link:', err);
       setError('Failed to create connection. Please try again.');
       // Clear error after 3 seconds
       setTimeout(() => setError(null), 3000);
     }
-  }, [nodes, setEdges]);
+  }, [nodes, setEdges, setNodes]);
 
   /**
    * Load graph data from API

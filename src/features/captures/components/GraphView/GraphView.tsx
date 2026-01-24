@@ -9,16 +9,14 @@ import {
   useNodesState,
   useEdgesState,
   ConnectionMode,
-  Handle,
-  Position,
   Connection,
   addEdge,
-  useConnection,
   MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { capturesService } from '@/features/captures/services/captures.service';
 import { GraphData } from '@/features/captures/types';
+import { CaptureNode, CaptureNodeData } from './CaptureNode';
 import FloatingEdge from './FloatingEdge';
 import CustomConnectionLine from './CustomConnectionLine';
 import './GraphView.scss';
@@ -32,100 +30,14 @@ export interface GraphViewProps {
 }
 
 /**
- * Node data type for our custom nodes
- */
-interface NoteNodeData extends Record<string, unknown> {
-  label: string;
-  tags: string[];
-  captureId: number;
-  slug: string;
-  content?: string;
-}
-
-/**
  * Edge data type for storing link metadata
  */
 interface EdgeData extends Record<string, unknown> {
   linkId?: number;
 }
 
-/**
- * Custom node component for displaying notes with easy connect functionality
- */
-const NoteNode = ({ id, data }: { id: string; data: NoteNodeData }) => {
-  const connection = useConnection();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [showExpandButton, setShowExpandButton] = useState(false);
-  const contentRef = useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      // Check if content is truncated by comparing scrollHeight with clientHeight
-      setShowExpandButton(node.scrollHeight > node.clientHeight);
-    }
-  }, []);
-
-  const isConnecting = connection.inProgress;
-  const isTarget = isConnecting && connection.fromNode.id !== id;
-
-  const toggleExpand = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsExpanded(!isExpanded);
-  };
-
-  return (
-    <div className="graph-node">
-     
-      {/* Handles outside body to cover entire node */}
-      {!isConnecting && (
-        <Handle
-          className="customHandle"
-          position={Position.Right}
-          type="source"
-        />
-      )}
-      {isTarget && (
-        <Handle
-          className="customHandle"
-          position={Position.Left}
-          type="target"
-          isConnectableStart={false}
-        />
-      )}
-      {showExpandButton && (
-        <button 
-          className="graph-node-expand-button" 
-          onClick={toggleExpand}
-          title={isExpanded ? "Collapse" : "Expand"}
-        >
-          {isExpanded ? "▲" : "▼"}
-        </button>
-      )}
-      <div className="graph-node-body">
-        <div className="graph-node-title">{data.label}</div>
-        <div 
-          ref={contentRef}
-          className={`graph-node-content ${isExpanded ? 'graph-node-content--expanded' : ''}`}
-        >
-          {data.content}
-        </div>
-        {data.tags && data.tags.length > 0 && (
-          <div className="graph-node-tags">
-            {data.tags.slice(0, 3).map((tag, index) => (
-              <span key={index} className="graph-node-tag">
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="drag-handle__custom" title="Drag to move">
-        ⋮⋮
-      </div>
-    </div>
-  );
-};
-
 const nodeTypes = {
-  note: NoteNode,
+  note: CaptureNode,
 } as const;
 
 const edgeTypes = {
@@ -162,13 +74,13 @@ const connectionLineStyle = {
 export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<NoteNodeData>>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<CaptureNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<EdgeData>>([]);
 
   /**
    * Handle node drag stop to save position
    */
-  const onNodeDragStop = useCallback(async (_event: React.MouseEvent, node: Node<NoteNodeData>) => {
+  const onNodeDragStop = useCallback(async (_event: React.MouseEvent, node: Node<CaptureNodeData>) => {
     const captureId = node.data?.captureId;
     if (captureId && node.position) {
       try {
@@ -272,11 +184,11 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
       const graphData: GraphData = await capturesService.getGraphData();
       
       // Convert API data to React Flow format
-      const flowNodes: Node<NoteNodeData>[] = graphData.nodes.map((node) => ({
+      const flowNodes: Node<CaptureNodeData>[] = graphData.nodes.map((node) => ({
         id: node.id,
         type: 'note' as const,
         position: node.position,
-        data: node.data as NoteNodeData,
+        data: node.data as CaptureNodeData,
         dragHandle: '.drag-handle__custom',
         connectable: true,
       }));
@@ -309,7 +221,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         }));
 
       // Apply tag filter if provided
-      let filteredNodes: Node<NoteNodeData>[] = flowNodes;
+      let filteredNodes: Node<CaptureNodeData>[] = flowNodes;
       let filteredEdges: Edge<EdgeData>[] = flowEdges;
 
       if (tagFilter && tagFilter.length > 0) {

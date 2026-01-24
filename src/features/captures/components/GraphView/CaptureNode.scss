@@ -1,0 +1,187 @@
+.graph-node {
+  padding: 16px;
+  padding-top: 40px;
+  background: white;
+  border-radius: 4px;
+  width: 200px;
+  height: 200px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  }
+
+  &--expanded {
+    height: auto;
+    min-height: 200px;
+  }
+}
+
+.graph-node-expand-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(0, 102, 204, 0.1);
+  color: #0066cc;
+  border: none;
+  border-radius: 0 4px 0 4px;
+  height: 30px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  user-select: none;
+  transition: all 0.2s;
+  z-index: 20;
+  pointer-events: all;
+
+  &:hover {
+    background: rgba(0, 102, 204, 0.2);
+    padding-bottom: 8px;
+  }
+
+  &:active {
+    background: rgba(0, 102, 204, 0.3);
+  }
+}
+
+.graph-node-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.drag-handle__custom {
+  position: absolute;
+  top: 0;
+  left: calc(50% - 25px);
+  background: rgba(0, 102, 204, 0.1);
+  color: #0066cc;
+  height: 30px;
+  width: 50px;
+  text-align: center;
+  border-radius: 0 0 4px 4px;
+  cursor: grab;
+  font-size: 16px;
+  font-weight: bold;
+  user-select: none;
+  transition: all 0.2s;
+  z-index: 19;
+  pointer-events: all;
+
+  &:hover {
+    background: rgba(0, 102, 204, 0.2);
+    padding-bottom: 8px;
+  }
+
+  &:active {
+    cursor: grabbing;
+    background: rgba(0, 102, 204, 0.3);
+  }
+}
+
+.graph-node-title {
+  font-weight: 600;
+  font-size: 14px;
+  max-height: 40px;
+  color: #1a1a1a;
+  word-wrap: break-word;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  margin-bottom: 5px;
+}
+
+.graph-node-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  pointer-events: none;
+  user-select: none;
+  overflow-y: hidden;
+  overflow-x: scroll;
+  flex-shrink: 0;
+  margin-bottom: 5px;
+}
+
+.graph-node-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.graph-node-content {
+  font-size: 12px;
+  color: #666;
+  word-wrap: break-word;
+  pointer-events: auto;
+  user-select: text;
+  line-height: 1.5;
+  overflow: hidden;
+  cursor: text;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  transition: max-height 0.3s ease;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #555;
+    }
+  }
+
+  &--expanded {
+    display: block;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+  }
+}
+
+// Custom handle for easy connect - covers entire node
+.react-flow__handle.customHandle {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100% ;
+  border-radius: 4px ;
+  transform: none ;
+  pointer-events: all ;
+  z-index: 10 ;
+  cursor: crosshair ;
+  opacity: 0 ; // Fully visible
+}

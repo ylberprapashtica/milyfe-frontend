@@ -213,4 +213,48 @@ export const capturesService = {
   updateCapturePosition: async (id: number, x: number, y: number): Promise<void> => {
     await apiClient.put(`/captures/${id}/position`, { x, y });
   },
+
+  /**
+   * Create a link between two captures
+   * 
+   * Makes a POST request to `/api/captures/links` to create a directional link
+   * from source capture to target capture.
+   * 
+   * @param {number} sourceId - The ID of the source capture
+   * @param {number} targetId - The ID of the target capture
+   * @returns {Promise<{link: {id: number, source_capture_id: number, target_capture_id: number}}>} Promise that resolves with the created link data
+   * @throws {Error} If the API request fails, captures not found, or validation fails
+   * 
+   * @example
+   * ```ts
+   * const result = await capturesService.createLink(1, 2);
+   * console.log(`Created link with ID: ${result.link.id}`);
+   * ```
+   */
+  createLink: async (sourceId: number, targetId: number): Promise<{link: {id: number, source_capture_id: number, target_capture_id: number}}> => {
+    const response = await apiClient.post<{link: {id: number, source_capture_id: number, target_capture_id: number}}>('/captures/links', {
+      source_capture_id: sourceId,
+      target_capture_id: targetId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Delete a link between two captures
+   * 
+   * Makes a DELETE request to `/api/captures/links/{linkId}` to remove a link.
+   * 
+   * @param {number} linkId - The unique identifier of the link to delete
+   * @returns {Promise<void>} Promise that resolves when the link is deleted
+   * @throws {Error} If the API request fails or link is not found (404)
+   * 
+   * @example
+   * ```ts
+   * await capturesService.deleteLink(5);
+   * console.log('Link deleted');
+   * ```
+   */
+  deleteLink: async (linkId: number): Promise<void> => {
+    await apiClient.delete(`/captures/links/${linkId}`);
+  },
 };

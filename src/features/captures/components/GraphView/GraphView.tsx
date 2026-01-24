@@ -12,6 +12,8 @@ import {
   ConnectionMode,
   Handle,
   Position,
+  Connection,
+  addEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { capturesService } from '@/features/captures/services/captures.service';
@@ -34,6 +36,13 @@ interface NoteNodeData extends Record<string, unknown> {
   tags: string[];
   captureId: number;
   slug: string;
+}
+
+/**
+ * Edge data type for storing link metadata
+ */
+interface EdgeData extends Record<string, unknown> {
+  linkId?: number;
 }
 
 /**
@@ -84,7 +93,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<NoteNodeData>>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<EdgeData>>([]);
 
   /**
    * Handle node click to navigate to note detail
@@ -116,6 +125,83 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
   }, []);
 
   /**
+   * Handle creating a new connection between nodes
+   */
+  const onConnect = useCallback(async (connection: Connection) => {
+    // Extract capture IDs from node data
+    const sourceNode = nodes.find((n) => n.id === connection.source);
+    const targetNode = nodes.find((n) => n.id === connection.target);
+
+    if (!sourceNode || !targetNode) {
+      console.error('Source or target node not found');
+      return;
+    }
+
+    const sourceCaptureId = sourceNode.data?.captureId;
+    const targetCaptureId = targetNode.data?.captureId;
+
+    if (!sourceCaptureId || !targetCaptureId) {
+      console.error('Source or target capture ID not found');
+      return;
+    }
+
+    try {
+      // Call API to create link
+      const result = await capturesService.createLink(sourceCaptureId, targetCaptureId);
+      
+      // Create the edge with the linkId from backend
+      const newEdge: Edge<EdgeData> = {
+        id: `link-${result.link.id}`,
+        source: connection.source,
+        target: connection.target,
+        type: 'straight',
+        animated: true,
+        data: {
+          linkId: result.link.id,
+        },
+      };
+
+      // Add edge to the graph
+      setEdges((eds) => addEdge(newEdge, eds));
+    } catch (err) {
+      console.error('Error creating link:', err);
+      setError('Failed to create connection. Please try again.');
+      // Clear error after 3 seconds
+      setTimeout(() => setError(null), 3000);
+    }
+  }, [nodes, setEdges]);
+
+  /**
+   * Handle clicking on an edge to delete it
+   */
+  const onEdgeClick = useCallback(async (_event: React.MouseEvent, edge: Edge<EdgeData>) => {
+    const linkId = edge.data?.linkId;
+
+    if (!linkId) {
+      console.error('Link ID not found in edge data');
+      return;
+    }
+
+    // Confirm deletion
+    if (!window.confirm('Are you sure you want to delete this connection?')) {
+      return;
+    }
+
+    try {
+      // Call API to delete link
+      await capturesService.deleteLink(linkId);
+
+      // Remove edge from graph
+      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+    } catch (err) {
+      console.error('Error deleting link:', err);
+      setError('Failed to delete connection. Please try again.');
+      // Clear error after 3 seconds
+      setTimeout(() => setError(null), 3000);
+    }
+  }, [setEdges]);
+
+  /**
    * Load graph data from API
    */
   const loadGraphData = useCallback(async (): Promise<void> => {
@@ -138,7 +224,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
       const validNodeIds = new Set(flowNodes.map((node) => node.id));
 
       // Convert edges and validate they reference existing nodes
-      const flowEdges: Edge[] = graphData.edges
+      const flowEdges: Edge<EdgeData>[] = graphData.edges
         .filter((edge) => {
           // Validate edge has valid source and target (not null/undefined)
           return (
@@ -151,16 +237,19 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
           );
         })
         .map((edge) => ({
-          id: edge.id,
+          id: edge.linkId ? `link-${edge.linkId}` : edge.id,
           source: edge.source,
           target: edge.target,
-          type: 'smoothstep' as const,
+          type: 'bezier' as const,
           animated: true,
+          data: {
+            linkId: edge.linkId,
+          },
         }));
 
       // Apply tag filter if provided
       let filteredNodes: Node<NoteNodeData>[] = flowNodes;
-      let filteredEdges: Edge[] = flowEdges;
+      let filteredEdges: Edge<EdgeData>[] = flowEdges;
 
       if (tagFilter && tagFilter.length > 0) {
         const nodeIdsWithTags = new Set(
@@ -224,6 +313,8 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
         onNodeDragStop={onNodeDragStop}
+        onConnect={onConnect}
+        onEdgeClick={onEdgeClick}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         fitView

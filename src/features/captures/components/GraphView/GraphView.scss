@@ -35,6 +35,7 @@
 
 .graph-node {
   padding: 12px;
+  padding-right: 40px;
   background: white;
   border: 2px solid #0066cc;
   border-radius: 8px;
@@ -52,23 +53,25 @@
 
 .drag-handle__custom {
   position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
   background: rgba(0, 102, 204, 0.1);
   color: #0066cc;
-  padding: 2px 8px;
-  border-radius: 0 0 8px 8px;
+  padding: 16px 6px;
+  border-radius: 8px 0 0 8px;
   cursor: grab;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: bold;
   user-select: none;
   transition: all 0.2s;
   z-index: 10;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
 
   &:hover {
     background: rgba(0, 102, 204, 0.2);
-    padding-bottom: 4px;
+    padding-left: 8px;
   }
 
   &:active {
@@ -98,4 +101,31 @@
   background: #e3f2fd;
   color: #1976d2;
   border-radius: 4px;
+}
+
+// Make handles bigger and more visible
+.react-flow__handle {
+  width: 16px !important;
+  height: 16px !important;
+  border-width: 3px !important;
+  background: white !important;
+  border-color: #0066cc !important;
+  transition: all 0.2s !important;
+
+  &:hover {
+    width: 20px !important;
+    height: 20px !important;
+    background: #0066cc !important;
+    border-color: #0052a3 !important;
+  }
+}
+
+// Target handle (top)
+.react-flow__handle-top {
+  top: -0 !important;
+}
+
+// Source handle (bottom)
+.react-flow__handle-bottom {
+  bottom: -0 !important;
 }

@@ -53,5 +53,7 @@ export interface GraphData {
     id: string;
     source: string;
     target: string;
+    /** Database ID of the note_links record (optional for new edges) */
+    linkId?: number;
   }>;
 }

@@ -224,6 +224,15 @@ export const CaptureInput = ({
         <div className="capture-input-hint">
           Tip: Use [[Note Title]] to create links to other notes.
         </div>
+        
+        <Button
+          onClick={handleSubmit}
+          disabled={!content.trim() || disabled}
+          loading={disabled}
+        >
+          {disabled ? 'Saving...' : submitButtonText}
+        </Button>
+
         <Input
           id="capture-title"
           label="Title (optional)"
@@ -254,14 +263,6 @@ export const CaptureInput = ({
           🤖 AI will automatically suggest relevant tags if left empty
         </div>
       )}
-
-      <Button
-        onClick={handleSubmit}
-        disabled={!content.trim() || disabled}
-        loading={disabled}
-      >
-        {disabled ? 'Saving...' : submitButtonText}
-      </Button>
     </div>
   );
 };

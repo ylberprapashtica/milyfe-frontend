@@ -19,6 +19,7 @@ import { GraphData } from '@/features/captures/types';
 import { CaptureNode, CaptureNodeData } from './CaptureNode';
 import FloatingEdge from './FloatingEdge';
 import CustomConnectionLine from './CustomConnectionLine';
+import { ConfirmModal } from '@/common/components/ui';
 import './GraphView.scss';
 
 /**
@@ -41,19 +42,25 @@ const nodeTypes = {
 } as const;
 
 const edgeTypes = {
-  floating: FloatingEdge,
-} as const;
+  floating: FloatingEdge as any,
+};
 
 const defaultEdgeOptions = {
   type: 'floating' as const,
   markerEnd: {
     type: MarkerType.ArrowClosed,
-    color: '#0066cc',
+    color: '#ffffff',
+    width: 10,
+    height: 10,
+  },
+  style: {
+    stroke: '#ffffff',
+    strokeWidth: 2,
   },
 };
 
 const connectionLineStyle = {
-  stroke: '#0066cc',
+  stroke: '#ffffff',
   strokeWidth: 2,
 } as const;
 
@@ -76,6 +83,51 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
   const [error, setError] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CaptureNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<EdgeData>>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [edgeToDelete, setEdgeToDelete] = useState<Edge<EdgeData> | null>(null);
+
+  /**
+   * Handle clicking on an edge to request deletion
+   */
+  const onEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge<EdgeData>) => {
+    setEdgeToDelete(edge);
+    setShowDeleteModal(true);
+  }, []);
+
+  /**
+   * Handle confirmed deletion of edge
+   */
+  const handleConfirmDelete = useCallback(async () => {
+    if (!edgeToDelete) return;
+
+    const linkId = edgeToDelete.data?.linkId;
+
+    if (!linkId) {
+      console.error('Link ID not found in edge data');
+      return;
+    }
+
+    try {
+      // Call API to delete link
+      await capturesService.deleteLink(linkId);
+
+      // Remove edge from graph
+      setEdges((eds) => eds.filter((e) => e.id !== edgeToDelete.id));
+    } catch (err) {
+      console.error('Error deleting link:', err);
+      setError('Failed to delete connection. Please try again.');
+      // Clear error after 3 seconds
+      setTimeout(() => setError(null), 3000);
+    }
+  }, [edgeToDelete, setEdges]);
+
+  /**
+   * Handle modal close
+   */
+  const handleCloseModal = useCallback(() => {
+    setShowDeleteModal(false);
+    setEdgeToDelete(null);
+  }, []);
 
   /**
    * Handle node drag stop to save position
@@ -142,36 +194,6 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
       setTimeout(() => setError(null), 3000);
     }
   }, [nodes, setEdges]);
-
-  /**
-   * Handle clicking on an edge to delete it
-   */
-  const onEdgeClick = useCallback(async (_event: React.MouseEvent, edge: Edge<EdgeData>) => {
-    const linkId = edge.data?.linkId;
-
-    if (!linkId) {
-      console.error('Link ID not found in edge data');
-      return;
-    }
-
-    // Confirm deletion
-    if (!window.confirm('Are you sure you want to delete this connection?')) {
-      return;
-    }
-
-    try {
-      // Call API to delete link
-      await capturesService.deleteLink(linkId);
-
-      // Remove edge from graph
-      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
-    } catch (err) {
-      console.error('Error deleting link:', err);
-      setError('Failed to delete connection. Please try again.');
-      // Clear error after 3 seconds
-      setTimeout(() => setError(null), 3000);
-    }
-  }, [setEdges]);
 
   /**
    * Load graph data from API
@@ -302,6 +324,15 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         <Controls />
         <MiniMap />
       </ReactFlow>
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={handleCloseModal}
+        onConfirm={handleConfirmDelete}
+        title="Delete Connection"
+        message="Are you sure you want to delete this connection?"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

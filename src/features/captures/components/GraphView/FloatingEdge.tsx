@@ -9,7 +9,8 @@ import { getEdgeParams } from './edgeUtils';
  * @param props - Edge properties from React Flow
  * @returns The rendered edge component or null if nodes are not found
  */
-function FloatingEdge({ id, source, target, markerEnd, style }: EdgeProps) {
+function FloatingEdge(props: EdgeProps) {
+  const { id, source, target, markerEnd, style } = props;
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
 

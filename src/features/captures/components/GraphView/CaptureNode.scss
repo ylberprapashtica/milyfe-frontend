@@ -6,7 +6,7 @@
   width: 200px;
   height: 200px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -143,30 +143,14 @@
   line-clamp: 5;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
-  transition: max-height 0.3s ease;
-  
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 3px;
-    
-    &:hover {
-      background: #555;
-    }
-  }
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 90px;
+  opacity: 1;
 
   &--expanded {
     display: block;
-    max-height: none;
-    overflow-y: auto;
+    max-height: 600px;
+    overflow: hidden;
     -webkit-line-clamp: unset;
     line-clamp: unset;
   }

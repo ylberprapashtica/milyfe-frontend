@@ -34,3 +34,65 @@
     background: #0052a3;
   }
 }
+
+// Edge styles
+.floating-edge {
+  transition: opacity 0.2s ease;
+
+  &--hovered {
+    .react-flow__edge-path {
+      stroke-width: 3;
+      opacity: 1;
+    }
+  }
+
+  .react-flow__edge-path {
+    transition: stroke-width 0.2s ease, opacity 0.2s ease;
+  }
+}
+
+// Edge delete button styles
+.edge-delete-button {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  circle {
+    transition: fill 0.2s ease, stroke 0.2s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
+
+  &:hover circle {
+    fill: #ffe6e6;
+    stroke: #dc3545;
+    stroke-width: 2.5;
+  }
+
+  line {
+    transition: stroke 0.2s ease, stroke-width 0.2s ease;
+  }
+
+  &:hover line {
+    stroke: #a71d2a;
+    stroke-width: 2.5;
+  }
+}
+
+// React Flow edge hover styles
+:global {
+  .react-flow__edge {
+    &:hover {
+      .react-flow__edge-path {
+        stroke-width: 3;
+      }
+    }
+  }
+
+  .react-flow__edge-path {
+    transition: stroke-width 0.2s ease;
+  }
+}
+

@@ -9,3 +9,6 @@ export type { TextareaProps } from './Textarea';
 
 export { Autocomplete } from './Autocomplete';
 export type { AutocompleteProps } from './Autocomplete';
+
+export { ConfirmModal } from './ConfirmModal';
+export type { ConfirmModalProps } from './ConfirmModal';

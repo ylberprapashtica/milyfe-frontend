@@ -42,6 +42,9 @@ interface NoteNodeData extends Record<string, unknown> {
 const NoteNode = ({ data }: { data: NoteNodeData }) => {
   return (
     <div className="graph-node">
+      <div className="drag-handle__custom" title="Drag to move">
+        ⋮⋮
+      </div>
       <Handle type="target" position={Position.Top} />
       <div className="graph-node-title">{data.label}</div>
       {data.tags && data.tags.length > 0 && (
@@ -128,6 +131,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         type: 'note' as const,
         position: node.position,
         data: node.data as NoteNodeData,
+        dragHandle: '.drag-handle__custom',
       }));
 
       // Create a Set of all valid node IDs for edge validation

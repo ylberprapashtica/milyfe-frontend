@@ -34,8 +34,17 @@ export const CreateNotePage = (): ReactElement => {
   ): Promise<void> => {
     try {
       await createCapture(content, title, tags);
+      
+      // Check if AI generation will happen
+      const aiWillGenerate = !title || !tags;
+      
       // Show success message
-      setSuccessMessage('Note created successfully!');
+      if (aiWillGenerate) {
+        setSuccessMessage('Note created successfully! AI is generating missing metadata...');
+      } else {
+        setSuccessMessage('Note created successfully!');
+      }
+      
       // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccessMessage(null);

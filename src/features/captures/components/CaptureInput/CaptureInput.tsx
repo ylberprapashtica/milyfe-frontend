@@ -228,22 +228,32 @@ export const CaptureInput = ({
           id="capture-title"
           label="Title (optional)"
           type="text"
-          placeholder="Note title (auto-extracted from first line if empty)"
+          placeholder="Leave empty for AI-generated title"
           value={title}
           onChange={handleTitleChange}
           disabled={disabled}
         />
+        {!title && (
+          <div className="capture-input-hint" style={{ marginTop: '-8px', marginBottom: '12px' }}>
+            💡 AI will automatically generate a title if left empty
+          </div>
+        )}
       </div>
 
       <Input
         id="capture-tags"
         label="Tags (optional)"
         type="text"
-        placeholder="tag1, tag2, tag3"
+        placeholder="Leave empty for AI-generated tags"
         value={tags}
         onChange={handleTagsChange}
         disabled={disabled}
       />
+      {!tags && (
+        <div className="capture-input-hint" style={{ marginTop: '-8px', marginBottom: '12px' }}>
+          🤖 AI will automatically suggest relevant tags if left empty
+        </div>
+      )}
 
       <Button
         onClick={handleSubmit}

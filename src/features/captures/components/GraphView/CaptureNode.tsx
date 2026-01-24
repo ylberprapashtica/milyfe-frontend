@@ -15,6 +15,7 @@ export interface CaptureNodeData extends Record<string, unknown> {
   captureId: number;
   slug: string;
   content?: string;
+  updated_at?: string;
 }
 
 /**
@@ -34,13 +35,26 @@ export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData })
   const isConnecting = connection.inProgress;
   const isTarget = isConnecting && connection.fromNode.id !== id;
 
+  /**
+   * Check if the node was updated within the last minute
+   */
+  const isRecentlyUpdated = (): boolean => {
+    if (!data.updated_at) return false;
+    const now = new Date().getTime();
+    const updatedAt = new Date(data.updated_at).getTime();
+    const oneMinuteInMs = 60 * 1000;
+    return now - updatedAt < oneMinuteInMs;
+  };
+
   const toggleExpand = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
 
+  const recentlyUpdated = isRecentlyUpdated();
+
   return (
-    <div className={`graph-node ${isExpanded ? 'graph-node--expanded' : ''}`}>
+    <div className={`graph-node ${isExpanded ? 'graph-node--expanded' : ''} ${recentlyUpdated ? 'graph-node--recently-updated' : ''}`}>
      
       {/* Handles outside body to cover entire node */}
       {!isConnecting && (

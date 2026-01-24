@@ -1,3 +1,19 @@
+// Keyframe animation for glowing effect
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.6),
+      0 0 20px 5px rgba(255, 255, 255, 0.3),
+      0 0 40px 10px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.6),
+      0 0 30px 10px rgba(255, 255, 255, 0.4),
+      0 0 60px 15px rgba(255, 255, 255, 0.2);
+  }
+}
+
 .graph-node {
   padding: 16px;
   padding-top: 40px;
@@ -18,6 +34,16 @@
   &--expanded {
     height: auto;
     min-height: 200px;
+  }
+
+  &--recently-updated {
+    animation: glow-pulse 2s ease-in-out infinite;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+
+    &:hover {
+      animation: glow-pulse 2s ease-in-out infinite;
+    }
   }
 }
 

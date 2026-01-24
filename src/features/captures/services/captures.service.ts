@@ -1,0 +1,216 @@
+import { apiClient } from '@/common/lib/api-client';
+import type { Capture, GraphData } from '@/features/captures/types';
+
+/**
+ * Captures API Service
+ * 
+ * Provides methods to interact with the backend capture API endpoints.
+ * All methods return Promises and handle HTTP requests via the API client.
+ * 
+ * @example
+ * ```ts
+ * import { capturesService } from '@/features/captures/services/captures.service';
+ * 
+ * // Get all captures
+ * const captures = await capturesService.getCaptures();
+ * 
+ * // Create a new capture
+ * const newCapture = await capturesService.createCapture('My thought');
+ * 
+ * // Update a capture
+ * const updated = await capturesService.updateCapture(1, 'Updated thought');
+ * 
+ * // Delete a capture
+ * await capturesService.deleteCapture(1);
+ * ```
+ */
+export const capturesService = {
+  /**
+   * Fetch all captures from the API
+   * 
+   * Makes a GET request to `/api/captures` and returns all captures.
+   * 
+   * @returns {Promise<Capture[]>} Promise that resolves to an array of all captures
+   * @throws {Error} If the API request fails
+   * 
+   * @example
+   * ```ts
+   * const captures = await capturesService.getCaptures();
+   * console.log(`Found ${captures.length} captures`);
+   * ```
+   */
+  getCaptures: async (): Promise<Capture[]> => {
+    const response = await apiClient.get<Capture[]>('/captures');
+    return response.data;
+  },
+
+  /**
+   * Fetch a single capture by ID
+   * 
+   * Makes a GET request to `/api/captures/{id}` and returns the capture with the specified ID.
+   * 
+   * @param {number} id - The unique identifier of the capture to fetch
+   * @returns {Promise<Capture>} Promise that resolves to the capture data
+   * @throws {Error} If the API request fails or capture is not found (404)
+   * 
+   * @example
+   * ```ts
+   * const capture = await capturesService.getCapture(1);
+   * console.log(capture.content);
+   * ```
+   */
+  getCapture: async (id: number): Promise<Capture> => {
+    const response = await apiClient.get<Capture>(`/captures/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Create a new capture
+   * 
+   * Makes a POST request to `/api/captures` with the content and optional title/tags.
+   * The API will assign an ID, generate a slug, and set timestamps automatically.
+   * 
+   * @param {string} content - The main content text
+   * @param {string} [title] - Optional title (auto-extracted from first line if not provided)
+   * @param {string[]} [tags] - Optional array of tags
+   * @returns {Promise<Capture>} Promise that resolves to the newly created capture
+   * @throws {Error} If the API request fails or validation fails (422)
+   * 
+   * @example
+   * ```ts
+   * const newCapture = await capturesService.createCapture('My new thought', 'My Title', ['tag1', 'tag2']);
+   * console.log(`Created capture with ID: ${newCapture.id}`);
+   * ```
+   */
+  createCapture: async (content: string, title?: string, tags?: string[]): Promise<Capture> => {
+    const response = await apiClient.post<Capture>('/captures', { content, title, tags });
+    return response.data;
+  },
+
+  /**
+   * Update an existing capture
+   * 
+   * Makes a PUT request to `/api/captures/{id}` to update the content, title, and tags.
+   * The updated_at timestamp will be automatically updated by the server.
+   * Links will be automatically parsed and synced from the content.
+   * 
+   * @param {number} id - The unique identifier of the capture to update
+   * @param {string} content - The new content text
+   * @param {string} [title] - Optional title (auto-extracted from first line if not provided)
+   * @param {string[]} [tags] - Optional array of tags
+   * @returns {Promise<Capture>} Promise that resolves to the updated capture
+   * @throws {Error} If the API request fails, capture is not found (404), or validation fails (422)
+   * 
+   * @example
+   * ```ts
+   * const updated = await capturesService.updateCapture(1, 'Updated content', 'New Title', ['tag1']);
+   * console.log(`Updated at: ${updated.updated_at}`);
+   * ```
+   */
+  updateCapture: async (id: number, content: string, title?: string, tags?: string[]): Promise<Capture> => {
+    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags });
+    return response.data;
+  },
+
+  /**
+   * Delete a capture
+   * 
+   * Makes a DELETE request to `/api/captures/{id}` to permanently delete the capture.
+   * 
+   * @param {number} id - The unique identifier of the capture to delete
+   * @returns {Promise<void>} Promise that resolves when the deletion is complete
+   * @throws {Error} If the API request fails or capture is not found (404)
+   * 
+   * @example
+   * ```ts
+   * await capturesService.deleteCapture(1);
+   * console.log('Capture deleted successfully');
+   * ```
+   */
+  deleteCapture: async (id: number): Promise<void> => {
+    await apiClient.delete(`/captures/${id}`);
+  },
+
+  /**
+   * Search captures by query
+   * 
+   * Makes a GET request to `/api/captures/search?q={query}` to search across titles and content.
+   * 
+   * @param {string} query - The search query string
+   * @returns {Promise<Capture[]>} Promise that resolves to an array of matching captures
+   * @throws {Error} If the API request fails
+   * 
+   * @example
+   * ```ts
+   * const results = await capturesService.searchCaptures('keyword');
+   * console.log(`Found ${results.length} matches`);
+   * ```
+   */
+  searchCaptures: async (query: string): Promise<Capture[]> => {
+    const response = await apiClient.get<Capture[]>('/captures/search', {
+      params: { q: query },
+    });
+    return response.data;
+  },
+
+  /**
+   * Get linked notes for a capture
+   * 
+   * Makes a GET request to `/api/captures/{id}/links` to get all notes linked from this capture.
+   * 
+   * @param {number} id - The unique identifier of the capture
+   * @returns {Promise<Capture[]>} Promise that resolves to an array of linked captures
+   * @throws {Error} If the API request fails or capture is not found (404)
+   * 
+   * @example
+   * ```ts
+   * const links = await capturesService.getCaptureLinks(1);
+   * console.log(`This note links to ${links.length} other notes`);
+   * ```
+   */
+  getCaptureLinks: async (id: number): Promise<Capture[]> => {
+    const response = await apiClient.get<Capture[]>(`/captures/${id}/links`);
+    return response.data;
+  },
+
+  /**
+   * Get graph data for visualization
+   * 
+   * Makes a GET request to `/api/captures/graph` to get all notes and links formatted for graph visualization.
+   * 
+   * @returns {Promise<GraphData>} Promise that resolves to graph data with nodes and edges
+   * @throws {Error} If the API request fails
+   * 
+   * @example
+   * ```ts
+   * const graphData = await capturesService.getGraphData();
+   * console.log(`Graph has ${graphData.nodes.length} nodes and ${graphData.edges.length} edges`);
+   * ```
+   */
+  getGraphData: async (): Promise<GraphData> => {
+    const response = await apiClient.get<GraphData>('/captures/graph');
+    return response.data;
+  },
+
+  /**
+   * Update the graph position of a capture
+   * 
+   * Makes a PUT request to `/api/captures/{id}/position` to update the x and y coordinates
+   * of a capture in the graph view.
+   * 
+   * @param {number} id - The unique identifier of the capture
+   * @param {number} x - The x coordinate position
+   * @param {number} y - The y coordinate position
+   * @returns {Promise<void>} Promise that resolves when the position is updated
+   * @throws {Error} If the API request fails or capture is not found (404)
+   * 
+   * @example
+   * ```ts
+   * await capturesService.updateCapturePosition(1, 100, 200);
+   * console.log('Position updated');
+   * ```
+   */
+  updateCapturePosition: async (id: number, x: number, y: number): Promise<void> => {
+    await apiClient.put(`/captures/${id}/position`, { x, y });
+  },
+};

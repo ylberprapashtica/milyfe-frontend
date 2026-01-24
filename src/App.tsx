@@ -1,14 +1,14 @@
 import React, { ReactElement } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ErrorBoundary } from './auth/components/ErrorBoundary';
-import { AuthProvider } from './auth/AuthProvider';
-import { ProtectedRoute } from './auth/components/ProtectedRoute';
-import { PublicRoute } from './auth/components/PublicRoute';
-import { LoginPage } from './auth/pages/LoginPage';
-import { RegisterPage } from './auth/pages/RegisterPage';
-import { CreateNotePage } from './captures/pages/CreateNotePage';
-import { CapturesPage } from './captures/pages/CapturesPage';
-import { CaptureDetailPage } from './captures/pages/CaptureDetailPage';
+import { ErrorBoundary } from '@/features/auth/components/ErrorBoundary';
+import { AuthProvider } from '@/features/auth/AuthProvider';
+import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
+import { PublicRoute } from '@/features/auth/components/PublicRoute';
+import { LoginPage } from '@/features/auth/pages/LoginPage';
+import { RegisterPage } from '@/features/auth/pages/RegisterPage';
+import { CreateNotePage } from '@/features/captures/pages/CreateNotePage';
+import { CapturesPage } from '@/features/captures/pages/CapturesPage';
+import { CaptureDetailPage } from '@/features/captures/pages/CaptureDetailPage';
 import './App.scss';
 
 /**

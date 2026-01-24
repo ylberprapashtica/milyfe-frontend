@@ -3,8 +3,11 @@ FROM node:22-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+# Copy package.json first for better caching
+COPY package.json ./
+
+# Copy package-lock.json if it exists
+COPY package-lock.json* ./
 
 # Install dependencies
 RUN npm ci

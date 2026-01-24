@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, ReactElement } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   ReactFlow,
   Node,
@@ -55,9 +54,22 @@ interface EdgeData extends Record<string, unknown> {
  */
 const NoteNode = ({ id, data }: { id: string; data: NoteNodeData }) => {
   const connection = useConnection();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showExpandButton, setShowExpandButton] = useState(false);
+  const contentRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // Check if content is truncated by comparing scrollHeight with clientHeight
+      setShowExpandButton(node.scrollHeight > node.clientHeight);
+    }
+  }, []);
 
   const isConnecting = connection.inProgress;
   const isTarget = isConnecting && connection.fromNode.id !== id;
+
+  const toggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
 
   return (
     <div className="graph-node">
@@ -78,9 +90,23 @@ const NoteNode = ({ id, data }: { id: string; data: NoteNodeData }) => {
           isConnectableStart={false}
         />
       )}
+      {showExpandButton && (
+        <button 
+          className="graph-node-expand-button" 
+          onClick={toggleExpand}
+          title={isExpanded ? "Collapse" : "Expand"}
+        >
+          {isExpanded ? "▲" : "▼"}
+        </button>
+      )}
       <div className="graph-node-body">
         <div className="graph-node-title">{data.label}</div>
-        <div className="graph-node-content">{data.content}</div>
+        <div 
+          ref={contentRef}
+          className={`graph-node-content ${isExpanded ? 'graph-node-content--expanded' : ''}`}
+        >
+          {data.content}
+        </div>
         {data.tags && data.tags.length > 0 && (
           <div className="graph-node-tags">
             {data.tags.slice(0, 3).map((tag, index) => (
@@ -134,27 +160,10 @@ const connectionLineStyle = {
  * ```
  */
 export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<NoteNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<EdgeData>>([]);
-
-  /**
-   * Handle node click to navigate to note detail
-   * Don't navigate if user is dragging or connecting
-   */
-  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node<NoteNodeData>) => {
-    // Don't navigate if this was a drag or connection attempt
-    if (_event.defaultPrevented) {
-      return;
-    }
-    
-    const captureId = node.data?.captureId;
-    if (captureId) {
-      navigate(`/captures/${captureId}`);
-    }
-  }, [navigate]);
 
   /**
    * Handle node drag stop to save position
@@ -363,7 +372,6 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeClick={onNodeClick}
         onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
         onEdgeClick={onEdgeClick}

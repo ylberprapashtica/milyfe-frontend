@@ -52,6 +52,34 @@
   }
 }
 
+.graph-node-expand-button {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  background: rgba(0, 102, 204, 0.1);
+  color: #0066cc;
+  border: none;
+  border-radius: 4px 0 0 4px;
+  width: 30px;
+  padding: 5px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  user-select: none;
+  transition: all 0.2s;
+  z-index: 20;
+  pointer-events: all;
+
+  &:hover {
+    background: rgba(0, 102, 204, 0.2);
+    padding-left: 8px;
+  }
+
+  &:active {
+    background: rgba(0, 102, 204, 0.3);
+  }
+}
+
 .graph-node-body {
   position: relative;
   width: 100%;
@@ -62,11 +90,12 @@
 
 .drag-handle__custom {
   position: absolute;
-  top: 50%;
+  top: 100px;
   right: 0;
   transform: translateY(-50%);
   background: rgba(0, 102, 204, 0.1);
   color: #0066cc;
+  width: 30px;
   padding: 20px 6px;
   border-radius: 4px 0 0 4px;
   cursor: grab;
@@ -74,7 +103,7 @@
   font-weight: bold;
   user-select: none;
   transition: all 0.2s;
-  z-index: 20;
+  z-index: 19;
   writing-mode: vertical-rl;
   text-orientation: mixed;
   pointer-events: all;
@@ -118,6 +147,7 @@
   line-clamp: 5;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
+  transition: max-height 0.3s ease;
   
   &::-webkit-scrollbar {
     width: 6px;
@@ -135,6 +165,14 @@
     &:hover {
       background: #555;
     }
+  }
+
+  &--expanded {
+    display: block;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
   }
 }
 

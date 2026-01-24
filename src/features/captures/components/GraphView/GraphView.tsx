@@ -14,10 +14,14 @@ import {
   Position,
   Connection,
   addEdge,
+  useConnection,
+  MarkerType,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { capturesService } from '@/features/captures/services/captures.service';
 import { GraphData } from '@/features/captures/types';
+import FloatingEdge from './FloatingEdge';
+import CustomConnectionLine from './CustomConnectionLine';
 import './GraphView.scss';
 
 /**
@@ -46,33 +50,72 @@ interface EdgeData extends Record<string, unknown> {
 }
 
 /**
- * Custom node component for displaying notes
+ * Custom node component for displaying notes with easy connect functionality
  */
-const NoteNode = ({ data }: { data: NoteNodeData }) => {
+const NoteNode = ({ id, data }: { id: string; data: NoteNodeData }) => {
+  const connection = useConnection();
+
+  const isConnecting = connection.inProgress;
+  const isTarget = isConnecting && connection.fromNode.id !== id;
+
   return (
     <div className="graph-node">
+     
+      {/* Handles outside body to cover entire node */}
+      {!isConnecting && (
+        <Handle
+          className="customHandle"
+          position={Position.Right}
+          type="source"
+        />
+      )}
+      {isTarget && (
+        <Handle
+          className="customHandle"
+          position={Position.Left}
+          type="target"
+          isConnectableStart={false}
+        />
+      )}
+      <div className="graph-node-body">
+        <div className="graph-node-title">{data.label}</div>
+        {data.tags && data.tags.length > 0 && (
+          <div className="graph-node-tags">
+            {data.tags.slice(0, 3).map((tag, index) => (
+              <span key={index} className="graph-node-tag">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="drag-handle__custom" title="Drag to move">
         ⋮⋮
       </div>
-      <Handle type="target" position={Position.Top} />
-      <div className="graph-node-title">{data.label}</div>
-      {data.tags && data.tags.length > 0 && (
-        <div className="graph-node-tags">
-          {data.tags.slice(0, 3).map((tag, index) => (
-            <span key={index} className="graph-node-tag">
-              #{tag}
-            </span>
-          ))}
-        </div>
-      )}
-      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 };
 
 const nodeTypes = {
   note: NoteNode,
+} as const;
+
+const edgeTypes = {
+  floating: FloatingEdge,
+} as const;
+
+const defaultEdgeOptions = {
+  type: 'floating' as const,
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    color: '#0066cc',
+  },
 };
+
+const connectionLineStyle = {
+  stroke: '#0066cc',
+  strokeWidth: 2,
+} as const;
 
 /**
  * Graph view component for visualizing note connections
@@ -97,8 +140,14 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
 
   /**
    * Handle node click to navigate to note detail
+   * Don't navigate if user is dragging or connecting
    */
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node<NoteNodeData>) => {
+    // Don't navigate if this was a drag or connection attempt
+    if (_event.defaultPrevented) {
+      return;
+    }
+    
     const captureId = node.data?.captureId;
     if (captureId) {
       navigate(`/captures/${captureId}`);
@@ -154,7 +203,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         id: `link-${result.link.id}`,
         source: connection.source,
         target: connection.target,
-        type: 'straight',
+        type: 'floating',
         animated: true,
         data: {
           linkId: result.link.id,
@@ -218,6 +267,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         position: node.position,
         data: node.data as NoteNodeData,
         dragHandle: '.drag-handle__custom',
+        connectable: true,
       }));
 
       // Create a Set of all valid node IDs for edge validation
@@ -240,7 +290,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
           id: edge.linkId ? `link-${edge.linkId}` : edge.id,
           source: edge.source,
           target: edge.target,
-          type: 'bezier' as const,
+          type: 'floating' as const,
           animated: true,
           data: {
             linkId: edge.linkId,
@@ -311,12 +361,19 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeClick={onNodeClick}
+        // onNodeClick={onNodeClick} // Temporarily disabled to test connections
         onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
         onEdgeClick={onEdgeClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
+        connectionLineComponent={CustomConnectionLine}
+        connectionLineStyle={connectionLineStyle}
         connectionMode={ConnectionMode.Loose}
+        connectOnClick={false}
+        nodesConnectable={true}
+        elementsSelectable={true}
         fitView
       >
         <Background />

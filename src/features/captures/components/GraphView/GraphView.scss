@@ -37,10 +37,8 @@
   padding: 12px;
   padding-right: 40px;
   background: white;
-  border: 2px solid #0066cc;
   border-radius: 8px;
   min-width: 150px;
-  cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
   position: relative;
@@ -49,6 +47,14 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     transform: translateY(-2px);
   }
+}
+
+.graph-node-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .drag-handle__custom {
@@ -65,9 +71,10 @@
   font-weight: bold;
   user-select: none;
   transition: all 0.2s;
-  z-index: 10;
+  z-index: 20;
   writing-mode: vertical-rl;
   text-orientation: mixed;
+  pointer-events: all;
 
   &:hover {
     background: rgba(0, 102, 204, 0.2);
@@ -86,6 +93,8 @@
   color: #333;
   margin-bottom: 8px;
   word-wrap: break-word;
+  pointer-events: none;
+  user-select: none;
 }
 
 .graph-node-tags {
@@ -93,6 +102,8 @@
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 8px;
+  pointer-events: none;
+  user-select: none;
 }
 
 .graph-node-tag {
@@ -101,31 +112,20 @@
   background: #e3f2fd;
   color: #1976d2;
   border-radius: 4px;
+  pointer-events: none;
+  user-select: none;
 }
 
-// Make handles bigger and more visible
-.react-flow__handle {
-  width: 16px !important;
-  height: 16px !important;
-  border-width: 3px !important;
-  background: white !important;
-  border-color: #0066cc !important;
-  transition: all 0.2s !important;
-
-  &:hover {
-    width: 20px !important;
-    height: 20px !important;
-    background: #0066cc !important;
-    border-color: #0052a3 !important;
-  }
-}
-
-// Target handle (top)
-.react-flow__handle-top {
-  top: -0 !important;
-}
-
-// Source handle (bottom)
-.react-flow__handle-bottom {
-  bottom: -0 !important;
+// Custom handle for easy connect - covers entire node
+.react-flow__handle.customHandle {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100% ;
+  border-radius: 8px ;
+  transform: none ;
+  pointer-events: all ;
+  z-index: 10 ;
+  cursor: crosshair ;
+  opacity: 0 ; // Fully visible
 }

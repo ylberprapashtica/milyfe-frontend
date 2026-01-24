@@ -40,6 +40,7 @@ interface NoteNodeData extends Record<string, unknown> {
   tags: string[];
   captureId: number;
   slug: string;
+  content?: string;
 }
 
 /**
@@ -79,6 +80,7 @@ const NoteNode = ({ id, data }: { id: string; data: NoteNodeData }) => {
       )}
       <div className="graph-node-body">
         <div className="graph-node-title">{data.label}</div>
+        <div className="graph-node-content">{data.content}</div>
         {data.tags && data.tags.length > 0 && (
           <div className="graph-node-tags">
             {data.tags.slice(0, 3).map((tag, index) => (
@@ -361,7 +363,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        // onNodeClick={onNodeClick} // Temporarily disabled to test connections
+        onNodeClick={onNodeClick}
         onNodeDragStop={onNodeDragStop}
         onConnect={onConnect}
         onEdgeClick={onEdgeClick}

@@ -42,6 +42,7 @@ export interface GraphData {
       tags: string[];
       captureId: number;
       slug: string;
+      content?: string;
     };
     position: {
       x: number;

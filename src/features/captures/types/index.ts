@@ -5,6 +5,22 @@
  */
 
 /**
+ * Capture type data structure
+ */
+export interface CaptureType {
+  /** Unique identifier for the capture type */
+  id: number;
+  /** Name of the type (e.g., "memory", "describing", "action", "planning", "dreaming") */
+  name: string;
+  /** Symbol representation of the type (e.g., "<<", "<", "0", ">", ">>") */
+  symbol: string;
+  /** ISO 8601 timestamp when the type was created */
+  created_at: string;
+  /** ISO 8601 timestamp when the type was last updated */
+  updated_at: string;
+}
+
+/**
  * Capture data structure
  * 
  * Represents a single capture with its metadata
@@ -20,6 +36,10 @@ export interface Capture {
   slug: string;
   /** Array of tags for categorization */
   tags: string[];
+  /** ID of the capture type (optional) */
+  capture_type_id?: number | null;
+  /** Capture type relationship (optional, loaded with relationships) */
+  capture_type?: CaptureType | null;
   /** ISO 8601 timestamp when the capture was created */
   created_at: string;
   /** ISO 8601 timestamp when the capture was last updated */

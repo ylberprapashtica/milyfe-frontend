@@ -26,6 +26,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
@@ -120,7 +121,7 @@
   max-height: 40px;
   color: #1a1a1a;
   word-wrap: break-word;
-  pointer-events: none;
+  pointer-events: auto;
   user-select: none;
   line-height: 1.4;
   overflow: hidden;
@@ -131,6 +132,16 @@
   text-overflow: ellipsis;
   flex-shrink: 0;
   margin-bottom: 5px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #0066cc;
+  }
+
+  &:active {
+    color: #0052a3;
+  }
 }
 
 .graph-node-tags {
@@ -182,16 +193,54 @@
   }
 }
 
-// Custom handle for easy connect - covers entire node
-.react-flow__handle.customHandle {
+// Type symbol background
+.graph-node-type-symbol {
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100% ;
-  border-radius: 4px ;
-  transform: none ;
-  pointer-events: all ;
-  z-index: 10 ;
-  cursor: crosshair ;
-  opacity: 0 ; // Fully visible
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 180px;
+  font-weight: 300;
+  opacity: 0.08;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  color: #1a1a1a;
+}
+
+// Connection handle - small circle in top-left corner
+.graph-node-connection-handle {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: #0066cc !important;
+  border: 2px solid white !important;
+  cursor: crosshair !important;
+  z-index: 20;
+  pointer-events: all;
+  transition: all 0.2s ease;
+  top: 12px !important;
+  left: 12px !important;
+  transform: translate(-50%, -50%) !important;
+
+  &:hover {
+    width: 16px !important;
+    height: 16px !important;
+    background: #0052a3 !important;
+    box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.2);
+  }
+
+  &--target {
+    background: #00cc66 !important;
+    border-color: white !important;
+
+    &:hover {
+      background: #00aa55 !important;
+      box-shadow: 0 0 0 4px rgba(0, 204, 102, 0.2);
+    }
+  }
 }

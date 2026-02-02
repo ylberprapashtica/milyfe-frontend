@@ -2,9 +2,11 @@ import { useState, KeyboardEvent, ChangeEvent, ReactElement, useRef, useEffect }
 import { Input } from '@/common/components/ui/Input';
 import { Textarea } from '@/common/components/ui/Textarea';
 import { Button } from '@/common/components/ui/Button';
+import { Select, SelectOption } from '@/common/components/ui/Select';
 import { Autocomplete } from '@/common/components/ui/Autocomplete';
 import { useCaptureAutocomplete } from '@/features/captures/hooks/useCaptureAutocomplete';
-import { Capture } from '@/features/captures/types';
+import { capturesService } from '@/features/captures/services/captures.service';
+import { Capture, CaptureType } from '@/features/captures/types';
 import './CaptureInput.scss';
 
 /**
@@ -12,7 +14,7 @@ import './CaptureInput.scss';
  */
 export interface CaptureInputProps {
   /** Callback function when a capture is submitted */
-  onSubmit: (content: string, title?: string, tags?: string[]) => Promise<void>;
+  onSubmit: (content: string, title?: string, tags?: string[], capture_type_id?: number | null) => Promise<void>;
   /** Whether the input should be disabled */
   disabled?: boolean;
   /** Placeholder text for the content textarea */
@@ -23,6 +25,8 @@ export interface CaptureInputProps {
   initialContent?: string;
   /** Initial tags value as comma-separated string (for editing existing captures) */
   initialTags?: string;
+  /** Initial capture type ID (for editing existing captures) */
+  initialCaptureTypeId?: number | null;
   /** Text to display on the submit button */
   submitButtonText?: string;
 }
@@ -55,13 +59,33 @@ export const CaptureInput = ({
   initialTitle,
   initialContent,
   initialTags,
+  initialCaptureTypeId,
   submitButtonText = 'Create Note',
 }: CaptureInputProps): ReactElement => {
   const [title, setTitle] = useState<string>(initialTitle || '');
   const [content, setContent] = useState<string>(initialContent || '');
   const [tags, setTags] = useState<string>(initialTags || '');
+  const [captureTypeId, setCaptureTypeId] = useState<string>(initialCaptureTypeId?.toString() || '');
+  const [captureTypes, setCaptureTypes] = useState<CaptureType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   
+  // Load capture types on mount
+  useEffect(() => {
+    const loadTypes = async (): Promise<void> => {
+      try {
+        setLoadingTypes(true);
+        const types = await capturesService.getCaptureTypes();
+        setCaptureTypes(types);
+      } catch (err) {
+        console.error('Error loading capture types:', err);
+      } finally {
+        setLoadingTypes(false);
+      }
+    };
+    loadTypes();
+  }, []);
+
   // Update state when initial values change (e.g., when loading a different capture)
   useEffect(() => {
     if (initialTitle !== undefined) {
@@ -73,7 +97,10 @@ export const CaptureInput = ({
     if (initialTags !== undefined) {
       setTags(initialTags);
     }
-  }, [initialTitle, initialContent, initialTags]);
+    if (initialCaptureTypeId !== undefined) {
+      setCaptureTypeId(initialCaptureTypeId?.toString() || '');
+    }
+  }, [initialTitle, initialContent, initialTags, initialCaptureTypeId]);
   
   // Autocomplete hook
   const {
@@ -115,6 +142,13 @@ export const CaptureInput = ({
   };
 
   /**
+   * Handle capture type select change
+   */
+  const handleTypeChange = (e: ChangeEvent<HTMLSelectElement>): void => {
+    setCaptureTypeId(e.target.value);
+  };
+
+  /**
    * Handle form submission
    */
   const handleSubmit = async (): Promise<void> => {
@@ -128,10 +162,12 @@ export const CaptureInput = ({
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0);
 
+      const typeId = captureTypeId ? parseInt(captureTypeId, 10) : null;
       await onSubmit(
         content.trim(),
         title.trim() || undefined,
-        tagsArray.length > 0 ? tagsArray : undefined
+        tagsArray.length > 0 ? tagsArray : undefined,
+        typeId
       );
       
       // Reset form only if not editing (no initial values)
@@ -139,6 +175,7 @@ export const CaptureInput = ({
         setTitle('');
         setContent('');
         setTags('');
+        setCaptureTypeId('');
       }
     } catch (err) {
       // Error handling is done by the parent component
@@ -263,6 +300,21 @@ export const CaptureInput = ({
           🤖 AI will automatically suggest relevant tags if left empty
         </div>
       )}
+
+      <Select
+        id="capture-type"
+        label="Type (optional)"
+        value={captureTypeId}
+        onChange={handleTypeChange}
+        disabled={disabled || loadingTypes}
+        options={[
+          { value: '', label: 'None' },
+          ...captureTypes.map((type) => ({
+            value: type.id.toString(),
+            label: `${type.symbol} ${type.name.charAt(0).toUpperCase() + type.name.slice(1)}`,
+          })),
+        ]}
+      />
     </div>
   );
 };

@@ -335,6 +335,8 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         connectOnClick={false}
         nodesConnectable={true}
         elementsSelectable={true}
+        minZoom={0.05}
+        maxZoom={4}
         fitView
       >
         <Background />

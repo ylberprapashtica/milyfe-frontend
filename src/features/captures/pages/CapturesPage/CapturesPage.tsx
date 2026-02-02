@@ -122,9 +122,10 @@ export const CapturesPage = (): ReactElement => {
     id: number,
     content: string,
     title?: string,
-    tags?: string[]
+    tags?: string[],
+    capture_type_id?: number | null
   ): Promise<void> => {
-    await updateCapture(id, content, title, tags);
+    await updateCapture(id, content, title, tags, capture_type_id);
     await reload();
   };
 

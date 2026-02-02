@@ -160,7 +160,6 @@ $white: #FFFFFF;
 }
 
 .captures-page-layout {
-  display: flex;
   flex: 1;
   overflow: hidden;
   position: relative;
@@ -168,7 +167,11 @@ $white: #FFFFFF;
 }
 
 .captures-page-sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 350px;
+  height: 100%;
   background: rgba($white, 0.75);
   backdrop-filter: blur(25px) saturate(180%);
   -webkit-backdrop-filter: blur(25px) saturate(180%);
@@ -176,12 +179,12 @@ $white: #FFFFFF;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: transform 0.3s ease, width 0.3s ease;
+  transition: transform 0.3s ease;
   box-shadow: 2px 0 8px 0 rgba($deep-koamaru, 0.1);
+  z-index: 10;
 
   &.closed {
     transform: translateX(-100%);
-    width: 0;
     border-right: none;
   }
 
@@ -212,7 +215,6 @@ $white: #FFFFFF;
 }
 
 .captures-page-graph {
-  flex: 1;
   width: 100%;
   height: 100%;
   position: relative;

@@ -12,3 +12,6 @@ export type { AutocompleteProps } from './Autocomplete';
 
 export { ConfirmModal } from './ConfirmModal';
 export type { ConfirmModalProps } from './ConfirmModal';
+
+export { Select } from './Select';
+export type { SelectProps, SelectOption } from './Select';

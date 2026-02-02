@@ -64,12 +64,13 @@ export const CaptureDetailPage = (): ReactElement => {
   const handleUpdate = async (
     content: string,
     title?: string,
-    tags?: string[]
+    tags?: string[],
+    capture_type_id?: number | null
   ): Promise<void> => {
     if (!capture) return;
     
     try {
-      await updateCapture(capture.id, content, title, tags);
+      await updateCapture(capture.id, content, title, tags, capture_type_id);
       // Reload the capture to get updated data
       if (id) {
         try {
@@ -144,6 +145,7 @@ export const CaptureDetailPage = (): ReactElement => {
               initialTitle={capture.title || ''}
               initialContent={capture.content}
               initialTags={capture.tags?.join(', ') || ''}
+              initialCaptureTypeId={capture.capture_type_id || null}
               submitButtonText="Update Note"
             />
           </CaptureForm>

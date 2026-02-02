@@ -1,5 +1,5 @@
 import { apiClient } from '@/common/lib/api-client';
-import type { Capture, GraphData } from '@/features/captures/types';
+import type { Capture, CaptureType, GraphData } from '@/features/captures/types';
 
 /**
  * Captures API Service
@@ -65,32 +65,52 @@ export const capturesService = {
   },
 
   /**
+   * Get all available capture types
+   * 
+   * Makes a GET request to `/api/captures/types` and returns all available capture types.
+   * 
+   * @returns {Promise<CaptureType[]>} Promise that resolves to an array of all capture types
+   * @throws {Error} If the API request fails
+   * 
+   * @example
+   * ```ts
+   * const types = await capturesService.getCaptureTypes();
+   * console.log(`Found ${types.length} capture types`);
+   * ```
+   */
+  getCaptureTypes: async (): Promise<CaptureType[]> => {
+    const response = await apiClient.get<CaptureType[]>('/captures/types');
+    return response.data;
+  },
+
+  /**
    * Create a new capture
    * 
-   * Makes a POST request to `/api/captures` with the content and optional title/tags.
+   * Makes a POST request to `/api/captures` with the content and optional title/tags/type.
    * The API will assign an ID, generate a slug, and set timestamps automatically.
    * 
    * @param {string} content - The main content text
    * @param {string} [title] - Optional title (auto-extracted from first line if not provided)
    * @param {string[]} [tags] - Optional array of tags
+   * @param {number} [capture_type_id] - Optional capture type ID
    * @returns {Promise<Capture>} Promise that resolves to the newly created capture
    * @throws {Error} If the API request fails or validation fails (422)
    * 
    * @example
    * ```ts
-   * const newCapture = await capturesService.createCapture('My new thought', 'My Title', ['tag1', 'tag2']);
+   * const newCapture = await capturesService.createCapture('My new thought', 'My Title', ['tag1', 'tag2'], 1);
    * console.log(`Created capture with ID: ${newCapture.id}`);
    * ```
    */
-  createCapture: async (content: string, title?: string, tags?: string[]): Promise<Capture> => {
-    const response = await apiClient.post<Capture>('/captures', { content, title, tags });
+  createCapture: async (content: string, title?: string, tags?: string[], capture_type_id?: number | null): Promise<Capture> => {
+    const response = await apiClient.post<Capture>('/captures', { content, title, tags, capture_type_id });
     return response.data;
   },
 
   /**
    * Update an existing capture
    * 
-   * Makes a PUT request to `/api/captures/{id}` to update the content, title, and tags.
+   * Makes a PUT request to `/api/captures/{id}` to update the content, title, tags, and type.
    * The updated_at timestamp will be automatically updated by the server.
    * Links will be automatically parsed and synced from the content.
    * 
@@ -98,17 +118,18 @@ export const capturesService = {
    * @param {string} content - The new content text
    * @param {string} [title] - Optional title (auto-extracted from first line if not provided)
    * @param {string[]} [tags] - Optional array of tags
+   * @param {number} [capture_type_id] - Optional capture type ID
    * @returns {Promise<Capture>} Promise that resolves to the updated capture
    * @throws {Error} If the API request fails, capture is not found (404), or validation fails (422)
    * 
    * @example
    * ```ts
-   * const updated = await capturesService.updateCapture(1, 'Updated content', 'New Title', ['tag1']);
+   * const updated = await capturesService.updateCapture(1, 'Updated content', 'New Title', ['tag1'], 2);
    * console.log(`Updated at: ${updated.updated_at}`);
    * ```
    */
-  updateCapture: async (id: number, content: string, title?: string, tags?: string[]): Promise<Capture> => {
-    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags });
+  updateCapture: async (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null): Promise<Capture> => {
+    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags, capture_type_id });
     return response.data;
   },
 

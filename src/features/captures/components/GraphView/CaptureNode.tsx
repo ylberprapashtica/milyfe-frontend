@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Handle,
   Position,
@@ -16,12 +17,15 @@ export interface CaptureNodeData extends Record<string, unknown> {
   slug: string;
   content?: string;
   updated_at?: string;
+  type?: string;
+  typeSymbol?: string;
 }
 
 /**
  * Custom node component for displaying captures with easy connect functionality
  */
 export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData }) => {
+  const navigate = useNavigate();
   const connection = useConnection();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showExpandButton, setShowExpandButton] = useState(false);
@@ -51,23 +55,32 @@ export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData })
     setIsExpanded(!isExpanded);
   };
 
+  /**
+   * Handle opening the capture detail page
+   */
+  const handleOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/captures/${data.captureId}`);
+  };
+
   const recentlyUpdated = isRecentlyUpdated();
 
   return (
     <div className={`graph-node ${isExpanded ? 'graph-node--expanded' : ''} ${recentlyUpdated ? 'graph-node--recently-updated' : ''}`}>
-     
-      {/* Handles outside body to cover entire node */}
-      {!isConnecting && (
-        <Handle
-          className="customHandle"
-          position={Position.Right}
-          type="source"
-        />
+      {/* Type symbol background */}
+      {data.typeSymbol && (
+        <div className="graph-node-type-symbol">{data.typeSymbol}</div>
       )}
+      {/* Connection handles - small circle in top-left corner */}
+      <Handle
+        className="graph-node-connection-handle graph-node-connection-handle--source"
+        position={Position.Top}
+        type="source"
+      />
       {isTarget && (
         <Handle
-          className="customHandle"
-          position={Position.Left}
+          className="graph-node-connection-handle graph-node-connection-handle--target"
+          position={Position.Top}
           type="target"
           isConnectableStart={false}
         />
@@ -82,16 +95,13 @@ export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData })
         </button>
       )}
       <div className="graph-node-body">
-        <div className="graph-node-title">{data.label}</div>
-         {data.tags && data.tags.length > 0 && (
-          <div className="graph-node-tags">
-            {data.tags.map((tag, index) => (
-              <span key={index} className="graph-node-tag">
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
+        <div 
+          className="graph-node-title"
+          onClick={handleOpen}
+          title="Click to open/edit"
+        >
+          {data.label}
+        </div>
         <div 
           ref={contentRef}
           className={`graph-node-content ${isExpanded ? 'graph-node-content--expanded' : ''}`}

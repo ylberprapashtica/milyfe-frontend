@@ -28,6 +28,10 @@ import './GraphView.scss';
 export interface GraphViewProps {
   /** Optional filter by tags */
   tagFilter?: string[];
+  /** Optional filter by status names (inclusive - only show nodes with these statuses) */
+  statusFilter?: string[];
+  /** Optional filter by type names (inclusive - only show nodes with these types) */
+  typeFilter?: string[];
 }
 
 /**
@@ -35,6 +39,7 @@ export interface GraphViewProps {
  */
 interface EdgeData extends Record<string, unknown> {
   linkId?: number;
+  filtered?: boolean;
 }
 
 const nodeTypes = {
@@ -78,7 +83,7 @@ const connectionLineStyle = {
  * <GraphView tagFilter={['tag1', 'tag2']} />
  * ```
  */
-export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
+export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProps): ReactElement => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CaptureNodeData>>([]);
@@ -259,10 +264,13 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
           },
         }));
 
-      // Apply tag filter if provided
+      // Apply filters (tag, status, type)
+      // For status and type filters, we keep all nodes but mark filtered ones
+      // For tag filter, we remove nodes (existing behavior)
       let filteredNodes: Node<CaptureNodeData>[] = flowNodes;
       let filteredEdges: Edge<EdgeData>[] = flowEdges;
 
+      // Apply tag filter if provided (removes nodes)
       if (tagFilter && tagFilter.length > 0) {
         const nodeIdsWithTags = new Set(
           flowNodes
@@ -281,6 +289,60 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
         );
       }
 
+      // Apply status and type filters (mark nodes as filtered, keep all nodes)
+      const hasStatusFilter = statusFilter && statusFilter.length > 0;
+      const hasTypeFilter = typeFilter && typeFilter.length > 0;
+
+      if (hasStatusFilter || hasTypeFilter) {
+        filteredNodes = filteredNodes.map((node) => {
+          const nodeStatus = node.data?.status || '';
+          const nodeType = node.data?.type || '';
+          
+          // Check if node matches filters
+          const matchesStatus = !hasStatusFilter || (nodeStatus && statusFilter!.includes(nodeStatus));
+          const matchesType = !hasTypeFilter || (nodeType && typeFilter!.includes(nodeType));
+          
+          // Node is filtered if it doesn't match the filters
+          const isFiltered = !(matchesStatus && matchesType);
+          
+          return {
+            ...node,
+            draggable: !isFiltered, // Disable dragging for filtered nodes
+            data: {
+              ...node.data,
+              filtered: isFiltered,
+            },
+          };
+        });
+
+        // Mark edges as filtered if either source or target node is filtered
+        const filteredNodeIds = new Set(
+          filteredNodes.filter((node) => node.data?.filtered).map((node) => node.id)
+        );
+
+        filteredEdges = filteredEdges.map((edge) => {
+          const isFiltered = filteredNodeIds.has(edge.source) || filteredNodeIds.has(edge.target);
+          return {
+            ...edge,
+            data: {
+              ...edge.data,
+              filtered: isFiltered,
+            },
+            style: isFiltered
+              ? {
+                  ...defaultEdgeOptions.style,
+                  ...edge.style,
+                  opacity: 0.1,
+                  stroke: '#ffffff',
+                }
+              : {
+                  ...defaultEdgeOptions.style,
+                  ...edge.style,
+                },
+          };
+        });
+      }
+
       setNodes(filteredNodes);
       setEdges(filteredEdges);
     } catch (err) {
@@ -289,7 +351,7 @@ export const GraphView = ({ tagFilter }: GraphViewProps): ReactElement => {
     } finally {
       setLoading(false);
     }
-  }, [tagFilter, setNodes, setEdges]);
+  }, [tagFilter, statusFilter, typeFilter, setNodes, setEdges]);
 
   useEffect(() => {
     loadGraphData();

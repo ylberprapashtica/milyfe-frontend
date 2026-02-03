@@ -5,7 +5,7 @@ import { useCapture } from '@/features/captures/hooks/useCapture';
 import { capturesService } from '@/features/captures/services/captures.service';
 import { Capture } from '@/features/captures/types';
 import { CaptureList } from '@/features/captures/components/CaptureList';
-import { GraphView } from '@/features/captures/components/GraphView';
+import { GraphView, GraphFilters } from '@/features/captures/components/GraphView';
 import { Button } from '@/common/components/ui/Button';
 import './CapturesPage.scss';
 
@@ -32,6 +32,8 @@ export const CapturesPage = (): ReactElement => {
   const { loading: updateLoading, updateCapture, deleteCapture } = useCapture();
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
   const [filteredCaptures, setFilteredCaptures] = useState<Capture[]>(captures);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
   
   // Initialize sidebar state based on screen size (collapsed by default on mobile)
   const getInitialSidebarState = (): boolean => {
@@ -144,6 +146,14 @@ export const CapturesPage = (): ReactElement => {
     navigate('/');
   };
 
+  /**
+   * Handle clearing all filters
+   */
+  const handleClearFilters = (): void => {
+    setStatusFilter([]);
+    setTypeFilter([]);
+  };
+
   const isLoading = loading || updateLoading;
 
   return (
@@ -167,6 +177,13 @@ export const CapturesPage = (): ReactElement => {
               onChange={handleSearchChange}
             />
           </div>
+          <GraphFilters
+            selectedStatuses={statusFilter}
+            selectedTypes={typeFilter}
+            onStatusChange={setStatusFilter}
+            onTypeChange={setTypeFilter}
+            onClearFilters={handleClearFilters}
+          />
           <Button
             onClick={handleCreateCapture}
             variant="primary"
@@ -192,7 +209,7 @@ export const CapturesPage = (): ReactElement => {
         </aside>
         
         <div className="captures-page-graph">
-          <GraphView />
+          <GraphView statusFilter={statusFilter} typeFilter={typeFilter} />
         </div>
       </div>
     </div>

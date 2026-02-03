@@ -85,6 +85,8 @@ export interface GraphData {
       content?: string;
       status?: string;
       statusColor?: string;
+      type?: string;
+      typeSymbol?: string;
     };
     position: {
       x: number;

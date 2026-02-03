@@ -163,6 +163,38 @@
     border-left: 3px solid #6c757d;
     opacity: 0.6;
   }
+
+  &--filtered {
+    background: rgba(255, 255, 255, 0.1) !important;
+    opacity: 0.12 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+
+    .graph-node-body,
+    .graph-node-title,
+    .graph-node-content,
+    .graph-node-type-symbol {
+      opacity: 0.1;
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .graph-node-connection-handle {
+      opacity: 0.1;
+    }
+
+    .graph-node-expand-button,
+    .drag-handle__custom {
+      opacity: 0;
+      pointer-events: none;
+      display: none;
+    }
+
+    &:hover {
+      opacity: 0.15 !important;
+      box-shadow: none !important;
+    }
+  }
 }
 
 .drag-handle__custom {

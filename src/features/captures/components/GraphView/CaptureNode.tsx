@@ -21,6 +21,7 @@ export interface CaptureNodeData extends Record<string, unknown> {
   statusColor?: string;
   type?: string;
   typeSymbol?: string;
+  filtered?: boolean;
 }
 
 /**
@@ -67,6 +68,7 @@ export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData })
 
   const recentlyUpdated = isRecentlyUpdated();
   const status = data.status || 'fleeting';
+  const isFiltered = data.filtered || false;
 
   /**
    * Get status display class
@@ -79,6 +81,9 @@ export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData })
    * Get border style for status
    */
   const getBorderStyle = (): React.CSSProperties => {
+    if (isFiltered) {
+      return {};
+    }
     if (data.statusColor) {
       return {
         borderLeft: `3px solid ${data.statusColor}`,
@@ -89,7 +94,7 @@ export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData })
 
   return (
     <div 
-      className={`graph-node ${isExpanded ? 'graph-node--expanded' : ''} ${recentlyUpdated ? 'graph-node--recently-updated' : ''} ${getStatusClass(status)}`}
+      className={`graph-node ${isExpanded ? 'graph-node--expanded' : ''} ${recentlyUpdated ? 'graph-node--recently-updated' : ''} ${getStatusClass(status)} ${isFiltered ? 'graph-node--filtered' : ''}`}
       style={getBorderStyle()}
     >
       {/* Type symbol background */}
@@ -134,9 +139,11 @@ export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData })
           {data.content}
         </div>
       </div>
-      <div className="drag-handle__custom" title="Drag to move">
-        ⋮⋮
-      </div>
+      {!isFiltered && (
+        <div className="drag-handle__custom" title="Drag to move">
+          ⋮⋮
+        </div>
+      )}
     </div>
   );
 };

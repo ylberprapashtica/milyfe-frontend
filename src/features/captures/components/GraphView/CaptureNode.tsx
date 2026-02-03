@@ -25,9 +25,19 @@ export interface CaptureNodeData extends Record<string, unknown> {
 }
 
 /**
+ * Props for the CaptureNode component
+ */
+export interface CaptureNodeProps {
+  id: string;
+  data: CaptureNodeData;
+  /** Optional callback when title is clicked. If provided, will be called instead of navigating. */
+  onTitleClick?: (captureId: number) => void;
+}
+
+/**
  * Custom node component for displaying captures with easy connect functionality
  */
-export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData }) => {
+export const CaptureNode = ({ id, data, onTitleClick }: CaptureNodeProps) => {
   const navigate = useNavigate();
   const connection = useConnection();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -59,11 +69,15 @@ export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData })
   };
 
   /**
-   * Handle opening the capture detail page
+   * Handle opening the capture detail page or modal
    */
   const handleOpen = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/captures/${data.captureId}`);
+    if (onTitleClick) {
+      onTitleClick(data.captureId);
+    } else {
+      navigate(`/captures/${data.captureId}`);
+    }
   };
 
   const recentlyUpdated = isRecentlyUpdated();

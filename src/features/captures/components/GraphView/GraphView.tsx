@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, ReactElement } from 'react';
+import { useEffect, useState, useCallback, ReactElement, createContext, useContext } from 'react';
 import {
   ReactFlow,
   Node,
@@ -20,7 +20,13 @@ import { CaptureNode, CaptureNodeData } from './CaptureNode';
 import FloatingEdge from './FloatingEdge';
 import CustomConnectionLine from './CustomConnectionLine';
 import { ConfirmModal } from '@/common/components/ui';
+import { CaptureEditModal } from '@/features/captures/components/CaptureEditModal';
 import './GraphView.scss';
+
+/**
+ * Context for passing onTitleClick callback to CaptureNode
+ */
+const NodeTitleClickContext = createContext<((captureId: number) => void) | undefined>(undefined);
 
 /**
  * Props for the GraphView component
@@ -42,8 +48,16 @@ interface EdgeData extends Record<string, unknown> {
   filtered?: boolean;
 }
 
+/**
+ * Wrapper component for CaptureNode that uses context for onTitleClick
+ */
+const CaptureNodeWithContext = (props: { id: string; data: CaptureNodeData }) => {
+  const onTitleClick = useContext(NodeTitleClickContext);
+  return <CaptureNode {...props} onTitleClick={onTitleClick} />;
+};
+
 const nodeTypes = {
-  note: CaptureNode,
+  note: CaptureNodeWithContext,
 } as const;
 
 const edgeTypes = {
@@ -90,6 +104,8 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<EdgeData>>([]);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [edgeToDelete, setEdgeToDelete] = useState<Edge<EdgeData> | null>(null);
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [editCaptureId, setEditCaptureId] = useState<number | null>(null);
 
   /**
    * Handle clicking on an edge to request deletion
@@ -127,11 +143,29 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
   }, [edgeToDelete, setEdges]);
 
   /**
-   * Handle modal close
+   * Handle delete modal close
    */
-  const handleCloseModal = useCallback(() => {
+  const handleCloseDeleteModal = useCallback(() => {
     setShowDeleteModal(false);
     setEdgeToDelete(null);
+  }, []);
+
+  /**
+   * Handle edit modal close
+   */
+  const handleCloseEditModal = useCallback(() => {
+    // Clear captureId first to prevent modal from reopening
+    setEditCaptureId(null);
+    // Then close the modal
+    setShowEditModal(false);
+  }, []);
+
+  /**
+   * Handle node title click - open edit modal
+   */
+  const handleNodeTitleClick = useCallback((captureId: number) => {
+    setEditCaptureId(captureId);
+    setShowEditModal(true);
   }, []);
 
   /**
@@ -353,6 +387,13 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
     }
   }, [tagFilter, statusFilter, typeFilter, setNodes, setEdges]);
 
+  /**
+   * Handle successful capture update - refresh graph
+   */
+  const handleUpdateSuccess = useCallback(() => {
+    loadGraphData();
+  }, [loadGraphData]);
+
   useEffect(() => {
     loadGraphData();
   }, [loadGraphData]);
@@ -379,41 +420,49 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
   }
 
   return (
-    <div className="graph-view">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeDragStop={onNodeDragStop}
-        onConnect={onConnect}
-        onEdgeClick={onEdgeClick}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        defaultEdgeOptions={defaultEdgeOptions}
-        connectionLineComponent={CustomConnectionLine}
-        connectionLineStyle={connectionLineStyle}
-        connectionMode={ConnectionMode.Loose}
-        connectOnClick={false}
-        nodesConnectable={true}
-        elementsSelectable={true}
-        minZoom={0.05}
-        maxZoom={4}
-        fitView
-      >
-        <Background />
-        <Controls />
-        <MiniMap />
-      </ReactFlow>
-      <ConfirmModal
-        isOpen={showDeleteModal}
-        onClose={handleCloseModal}
-        onConfirm={handleConfirmDelete}
-        title="Delete Connection"
-        message="Are you sure you want to delete this connection?"
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
-    </div>
+    <NodeTitleClickContext.Provider value={handleNodeTitleClick}>
+      <div className="graph-view">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onNodeDragStop={onNodeDragStop}
+          onConnect={onConnect}
+          onEdgeClick={onEdgeClick}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          defaultEdgeOptions={defaultEdgeOptions}
+          connectionLineComponent={CustomConnectionLine}
+          connectionLineStyle={connectionLineStyle}
+          connectionMode={ConnectionMode.Loose}
+          connectOnClick={false}
+          nodesConnectable={true}
+          elementsSelectable={true}
+          minZoom={0.05}
+          maxZoom={4}
+          fitView
+        >
+          <Background />
+          <Controls />
+          <MiniMap />
+        </ReactFlow>
+        <ConfirmModal
+          isOpen={showDeleteModal}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+          title="Delete Connection"
+          message="Are you sure you want to delete this connection?"
+          confirmText="Delete"
+          cancelText="Cancel"
+        />
+        <CaptureEditModal
+          isOpen={showEditModal}
+          onClose={handleCloseEditModal}
+          captureId={editCaptureId}
+          onUpdateSuccess={handleUpdateSuccess}
+        />
+      </div>
+    </NodeTitleClickContext.Provider>
   );
 };

@@ -1,10 +1,11 @@
-import { useEffect, useState, ReactElement } from 'react';
+import { useEffect, useState, ReactElement, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { capturesService } from '@/features/captures/services/captures.service';
 import { Capture } from '@/features/captures/types';
 import { useCapture } from '@/features/captures/hooks/useCapture';
 import { CaptureInput } from '@/features/captures/components/CaptureInput';
 import { CaptureForm } from '@/features/captures/components/CaptureForm';
+import { Button } from '@/common/components/ui/Button';
 import './CaptureDetailPage.scss';
 
 /**
@@ -29,7 +30,9 @@ export const CaptureDetailPage = (): ReactElement => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isFormValid, setIsFormValid] = useState<boolean>(true);
   const { loading: updateLoading, error: updateError, updateCapture, deleteCapture } = useCapture();
+  const submitHandlerRef = useRef<(() => Promise<void>) | null>(null);
 
   /**
    * Load the capture by ID
@@ -65,12 +68,13 @@ export const CaptureDetailPage = (): ReactElement => {
     content: string,
     title?: string,
     tags?: string[],
-    capture_type_id?: number | null
+    capture_type_id?: number | null,
+    capture_status_id?: number | null
   ): Promise<void> => {
     if (!capture) return;
     
     try {
-      await updateCapture(capture.id, content, title, tags, capture_type_id);
+      await updateCapture(capture.id, content, title, tags, capture_type_id, capture_status_id);
       // Reload the capture to get updated data
       if (id) {
         try {
@@ -125,9 +129,18 @@ export const CaptureDetailPage = (): ReactElement => {
       <div className="create-note-page-container">
         <div className="create-note-page-header">
           <h1 className="create-note-page-title">Edit Note</h1>
-          <Link to="/slipbox" className="create-note-page-link">
-            View Slipbox →
-          </Link>
+          <div className="create-note-page-header-actions">
+            <Button
+              onClick={() => submitHandlerRef.current?.()}
+              disabled={!isFormValid || updateLoading}
+              loading={updateLoading}
+            >
+              {updateLoading ? 'Saving...' : 'Update Note'}
+            </Button>
+            <Link to="/slipbox" className="create-note-page-link">
+              View Slipbox →
+            </Link>
+          </div>
         </div>
 
         {successMessage && (
@@ -146,7 +159,12 @@ export const CaptureDetailPage = (): ReactElement => {
               initialContent={capture.content}
               initialTags={capture.tags?.join(', ') || ''}
               initialCaptureTypeId={capture.capture_type_id || null}
-              submitButtonText="Update Note"
+              initialCaptureStatusId={capture.capture_status_id || null}
+              hideSubmitButton={true}
+              onSubmitHandlerReady={(handler) => {
+                submitHandlerRef.current = handler;
+              }}
+              onFormValidityChange={setIsFormValid}
             />
           </CaptureForm>
         </div>

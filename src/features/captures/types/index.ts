@@ -5,6 +5,22 @@
  */
 
 /**
+ * Capture status data structure
+ */
+export interface CaptureStatus {
+  /** Unique identifier for the capture status */
+  id: number;
+  /** Name of the status (e.g., "fleeting", "reviewed", "organized", "implemented", "forgotten", "deleted") */
+  name: string;
+  /** Color for the status (e.g., "#9c27b0" for purple) */
+  color?: string | null;
+  /** ISO 8601 timestamp when the status was created */
+  created_at: string;
+  /** ISO 8601 timestamp when the status was last updated */
+  updated_at: string;
+}
+
+/**
  * Capture type data structure
  */
 export interface CaptureType {
@@ -36,6 +52,10 @@ export interface Capture {
   slug: string;
   /** Array of tags for categorization */
   tags: string[];
+  /** ID of the capture status */
+  capture_status_id?: number | null;
+  /** Capture status relationship (optional, loaded with relationships) */
+  capture_status?: CaptureStatus | null;
   /** ID of the capture type (optional) */
   capture_type_id?: number | null;
   /** Capture type relationship (optional, loaded with relationships) */
@@ -63,6 +83,8 @@ export interface GraphData {
       captureId: number;
       slug: string;
       content?: string;
+      status?: string;
+      statusColor?: string;
     };
     position: {
       x: number;

@@ -1,12 +1,11 @@
 import { useState, KeyboardEvent, ChangeEvent, ReactElement, useRef, useEffect } from 'react';
 import { Input } from '@/common/components/ui/Input';
 import { Textarea } from '@/common/components/ui/Textarea';
-import { Button } from '@/common/components/ui/Button';
-import { Select, SelectOption } from '@/common/components/ui/Select';
+import { Select } from '@/common/components/ui/Select';
 import { Autocomplete } from '@/common/components/ui/Autocomplete';
 import { useCaptureAutocomplete } from '@/features/captures/hooks/useCaptureAutocomplete';
 import { capturesService } from '@/features/captures/services/captures.service';
-import { Capture, CaptureType } from '@/features/captures/types';
+import { Capture, CaptureStatus, CaptureType } from '@/features/captures/types';
 import './CaptureInput.scss';
 
 /**
@@ -14,7 +13,7 @@ import './CaptureInput.scss';
  */
 export interface CaptureInputProps {
   /** Callback function when a capture is submitted */
-  onSubmit: (content: string, title?: string, tags?: string[], capture_type_id?: number | null) => Promise<void>;
+  onSubmit: (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null) => Promise<void>;
   /** Whether the input should be disabled */
   disabled?: boolean;
   /** Placeholder text for the content textarea */
@@ -27,8 +26,16 @@ export interface CaptureInputProps {
   initialTags?: string;
   /** Initial capture type ID (for editing existing captures) */
   initialCaptureTypeId?: number | null;
+  /** Initial capture status ID (for editing existing captures) */
+  initialCaptureStatusId?: number | null;
   /** Text to display on the submit button */
   submitButtonText?: string;
+  /** Whether to hide the submit button (for external button placement) */
+  hideSubmitButton?: boolean;
+  /** Callback to get the submit handler function */
+  onSubmitHandlerReady?: (handler: () => Promise<void>) => void;
+  /** Callback to get the form validity state */
+  onFormValidityChange?: (isValid: boolean) => void;
 }
 
 /**
@@ -60,17 +67,24 @@ export const CaptureInput = ({
   initialContent,
   initialTags,
   initialCaptureTypeId,
+  initialCaptureStatusId,
   submitButtonText = 'Create Note',
+  hideSubmitButton = false,
+  onSubmitHandlerReady,
+  onFormValidityChange,
 }: CaptureInputProps): ReactElement => {
   const [title, setTitle] = useState<string>(initialTitle || '');
   const [content, setContent] = useState<string>(initialContent || '');
   const [tags, setTags] = useState<string>(initialTags || '');
   const [captureTypeId, setCaptureTypeId] = useState<string>(initialCaptureTypeId?.toString() || '');
+  const [captureStatusId, setCaptureStatusId] = useState<string>(initialCaptureStatusId?.toString() || '');
   const [captureTypes, setCaptureTypes] = useState<CaptureType[]>([]);
+  const [captureStatuses, setCaptureStatuses] = useState<CaptureStatus[]>([]);
   const [loadingTypes, setLoadingTypes] = useState<boolean>(false);
+  const [loadingStatuses, setLoadingStatuses] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   
-  // Load capture types on mount
+  // Load capture types and statuses on mount
   useEffect(() => {
     const loadTypes = async (): Promise<void> => {
       try {
@@ -83,8 +97,29 @@ export const CaptureInput = ({
         setLoadingTypes(false);
       }
     };
+    
+    const loadStatuses = async (): Promise<void> => {
+      try {
+        setLoadingStatuses(true);
+        const statuses = await capturesService.getCaptureStatuses();
+        setCaptureStatuses(statuses);
+        // Set default to 'fleeting' if no initial status is provided
+        if (!initialCaptureStatusId && statuses.length > 0) {
+          const fleetingStatus = statuses.find(s => s.name === 'fleeting');
+          if (fleetingStatus) {
+            setCaptureStatusId(fleetingStatus.id.toString());
+          }
+        }
+      } catch (err) {
+        console.error('Error loading capture statuses:', err);
+      } finally {
+        setLoadingStatuses(false);
+      }
+    };
+    
     loadTypes();
-  }, []);
+    loadStatuses();
+  }, [initialCaptureStatusId]);
 
   // Update state when initial values change (e.g., when loading a different capture)
   useEffect(() => {
@@ -100,7 +135,10 @@ export const CaptureInput = ({
     if (initialCaptureTypeId !== undefined) {
       setCaptureTypeId(initialCaptureTypeId?.toString() || '');
     }
-  }, [initialTitle, initialContent, initialTags, initialCaptureTypeId]);
+    if (initialCaptureStatusId !== undefined) {
+      setCaptureStatusId(initialCaptureStatusId?.toString() || '');
+    }
+  }, [initialTitle, initialContent, initialTags, initialCaptureTypeId, initialCaptureStatusId]);
   
   // Autocomplete hook
   const {
@@ -149,6 +187,13 @@ export const CaptureInput = ({
   };
 
   /**
+   * Handle status select change
+   */
+  const handleStatusChange = (e: ChangeEvent<HTMLSelectElement>): void => {
+    setCaptureStatusId(e.target.value);
+  };
+
+  /**
    * Handle form submission
    */
   const handleSubmit = async (): Promise<void> => {
@@ -163,11 +208,13 @@ export const CaptureInput = ({
         .filter((tag) => tag.length > 0);
 
       const typeId = captureTypeId ? parseInt(captureTypeId, 10) : null;
+      const statusId = captureStatusId ? parseInt(captureStatusId, 10) : null;
       await onSubmit(
         content.trim(),
         title.trim() || undefined,
         tagsArray.length > 0 ? tagsArray : undefined,
-        typeId
+        typeId,
+        statusId
       );
       
       // Reset form only if not editing (no initial values)
@@ -176,6 +223,9 @@ export const CaptureInput = ({
         setContent('');
         setTags('');
         setCaptureTypeId('');
+        // Reset to default 'fleeting' status
+        const fleetingStatus = captureStatuses.find(s => s.name === 'fleeting');
+        setCaptureStatusId(fleetingStatus?.id.toString() || '');
       }
     } catch (err) {
       // Error handling is done by the parent component
@@ -231,6 +281,21 @@ export const CaptureInput = ({
     closeAutocomplete();
   };
 
+  // Expose submit handler and form validity to parent if requested
+  useEffect(() => {
+    if (onSubmitHandlerReady) {
+      onSubmitHandlerReady(handleSubmit);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onSubmitHandlerReady]);
+
+  // Notify parent of form validity changes
+  useEffect(() => {
+    if (onFormValidityChange) {
+      onFormValidityChange(content.trim().length > 0 && !disabled);
+    }
+  }, [content, disabled, onFormValidityChange]);
+
   return (
     <div className="capture-input-container">
       <div className="capture-input-field" style={{ position: 'relative' }}>
@@ -262,14 +327,35 @@ export const CaptureInput = ({
           Tip: Use [[Note Title]] to create links to other notes.
         </div>
         
-        <Button
-          onClick={handleSubmit}
-          disabled={!content.trim() || disabled}
-          loading={disabled}
-        >
-          {disabled ? 'Saving...' : submitButtonText}
-        </Button>
+        <Select
+        id="capture-type"
+        label="Type (optional)"
+        value={captureTypeId}
+        onChange={handleTypeChange}
+        disabled={disabled || loadingTypes}
+        options={[
+          { value: '', label: 'None' },
+          ...captureTypes.map((type) => ({
+            value: type.id.toString(),
+            label: `${type.symbol} ${type.name.charAt(0).toUpperCase() + type.name.slice(1)}`,
+          })),
+        ]}
+      />
 
+        <Select
+        id="capture-status"
+        label="Status"
+        value={captureStatusId}
+        onChange={handleStatusChange}
+        disabled={disabled || loadingStatuses}
+        options={[
+          ...captureStatuses.map((status) => ({
+            value: status.id.toString(),
+            label: status.name.charAt(0).toUpperCase() + status.name.slice(1),
+          })),
+        ]}
+      />
+      
         <Input
           id="capture-title"
           label="Title (optional)"
@@ -300,21 +386,6 @@ export const CaptureInput = ({
           🤖 AI will automatically suggest relevant tags if left empty
         </div>
       )}
-
-      <Select
-        id="capture-type"
-        label="Type (optional)"
-        value={captureTypeId}
-        onChange={handleTypeChange}
-        disabled={disabled || loadingTypes}
-        options={[
-          { value: '', label: 'None' },
-          ...captureTypes.map((type) => ({
-            value: type.id.toString(),
-            label: `${type.symbol} ${type.name.charAt(0).toUpperCase() + type.name.slice(1)}`,
-          })),
-        ]}
-      />
     </div>
   );
 };

@@ -1,8 +1,9 @@
-import { useState, ReactElement } from 'react';
+import { useState, ReactElement, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useCaptures } from '@/features/captures/hooks/useCaptures';
 import { CaptureInput } from '@/features/captures/components/CaptureInput';
 import { CaptureForm } from '@/features/captures/components/CaptureForm';
+import { Button } from '@/common/components/ui/Button';
 import './CreateNotePage.scss';
 
 /**
@@ -23,6 +24,8 @@ import './CreateNotePage.scss';
 export const CreateNotePage = (): ReactElement => {
   const { loading, error, createCapture } = useCaptures();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isFormValid, setIsFormValid] = useState<boolean>(false);
+  const submitHandlerRef = useRef<(() => Promise<void>) | null>(null);
 
   /**
    * Handle capture creation
@@ -31,10 +34,11 @@ export const CreateNotePage = (): ReactElement => {
     content: string,
     title?: string,
     tags?: string[],
-    capture_type_id?: number | null
+    capture_type_id?: number | null,
+    capture_status_id?: number | null
   ): Promise<void> => {
     try {
-      await createCapture(content, title, tags, capture_type_id);
+      await createCapture(content, title, tags, capture_type_id, capture_status_id);
       
       // Check if AI generation will happen
       const aiWillGenerate = !title || !tags;
@@ -61,9 +65,18 @@ export const CreateNotePage = (): ReactElement => {
       <div className="create-note-page-container">
         <div className="create-note-page-header">
           <h1 className="create-note-page-title">Create New Note</h1>
-          <Link to="/slipbox" className="create-note-page-link">
-            View Slipbox →
-          </Link>
+          <div className="create-note-page-header-actions">
+            <Button
+              onClick={() => submitHandlerRef.current?.()}
+              disabled={!isFormValid || loading}
+              loading={loading}
+            >
+              {loading ? 'Saving...' : 'Create Note'}
+            </Button>
+            <Link to="/slipbox" className="create-note-page-link">
+              View Slipbox →
+            </Link>
+          </div>
         </div>
 
         {successMessage && (
@@ -78,6 +91,11 @@ export const CreateNotePage = (): ReactElement => {
               onSubmit={handleCreate}
               disabled={loading}
               placeholder="Write your note here. Use [[double brackets]] to link to other notes..."
+              hideSubmitButton={true}
+              onSubmitHandlerReady={(handler) => {
+                submitHandlerRef.current = handler;
+              }}
+              onFormValidityChange={setIsFormValid}
             />
           </CaptureForm>
         </div>

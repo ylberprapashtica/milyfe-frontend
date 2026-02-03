@@ -17,6 +17,8 @@ export interface CaptureNodeData extends Record<string, unknown> {
   slug: string;
   content?: string;
   updated_at?: string;
+  status?: string;
+  statusColor?: string;
   type?: string;
   typeSymbol?: string;
 }
@@ -64,9 +66,32 @@ export const CaptureNode = ({ id, data }: { id: string; data: CaptureNodeData })
   };
 
   const recentlyUpdated = isRecentlyUpdated();
+  const status = data.status || 'fleeting';
+
+  /**
+   * Get status display class
+   */
+  const getStatusClass = (status: string): string => {
+    return `graph-node--status-${status}`;
+  };
+
+  /**
+   * Get border style for status
+   */
+  const getBorderStyle = (): React.CSSProperties => {
+    if (data.statusColor) {
+      return {
+        borderLeft: `3px solid ${data.statusColor}`,
+      };
+    }
+    return {};
+  };
 
   return (
-    <div className={`graph-node ${isExpanded ? 'graph-node--expanded' : ''} ${recentlyUpdated ? 'graph-node--recently-updated' : ''}`}>
+    <div 
+      className={`graph-node ${isExpanded ? 'graph-node--expanded' : ''} ${recentlyUpdated ? 'graph-node--recently-updated' : ''} ${getStatusClass(status)}`}
+      style={getBorderStyle()}
+    >
       {/* Type symbol background */}
       {data.typeSymbol && (
         <div className="graph-node-type-symbol">{data.typeSymbol}</div>

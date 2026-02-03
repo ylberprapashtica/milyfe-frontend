@@ -82,9 +82,10 @@ $white: #FFFFFF;
 
 .create-note-page-header {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 15px;
 }
 
 .create-note-page-title {
@@ -95,6 +96,13 @@ $white: #FFFFFF;
   font-weight: 600;
   text-shadow: 0 1px 3px rgba($white, 0.8);
   letter-spacing: -0.5px;
+  margin-bottom: 15px;
+}
+
+.create-note-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .create-note-page-link {

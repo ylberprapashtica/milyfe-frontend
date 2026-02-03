@@ -10,6 +10,7 @@ describe('CaptureItem Component', () => {
     title: 'Test Title',
     slug: 'test-title',
     tags: [],
+    capture_status_id: 1,
     created_at: '2024-01-01T00:00:00.000000Z',
     updated_at: '2024-01-01T00:00:00.000000Z',
   };

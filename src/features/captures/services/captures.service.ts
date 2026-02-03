@@ -1,5 +1,5 @@
 import { apiClient } from '@/common/lib/api-client';
-import type { Capture, CaptureType, GraphData } from '@/features/captures/types';
+import type { Capture, CaptureStatus, CaptureType, GraphData } from '@/features/captures/types';
 
 /**
  * Captures API Service
@@ -84,33 +84,53 @@ export const capturesService = {
   },
 
   /**
+   * Get all available capture statuses
+   * 
+   * Makes a GET request to `/api/captures/statuses` and returns all available capture statuses.
+   * 
+   * @returns {Promise<CaptureStatus[]>} Promise that resolves to an array of all capture statuses
+   * @throws {Error} If the API request fails
+   * 
+   * @example
+   * ```ts
+   * const statuses = await capturesService.getCaptureStatuses();
+   * console.log(`Found ${statuses.length} capture statuses`);
+   * ```
+   */
+  getCaptureStatuses: async (): Promise<CaptureStatus[]> => {
+    const response = await apiClient.get<CaptureStatus[]>('/captures/statuses');
+    return response.data;
+  },
+
+  /**
    * Create a new capture
    * 
-   * Makes a POST request to `/api/captures` with the content and optional title/tags/type.
+   * Makes a POST request to `/api/captures` with the content and optional title/tags/type/status.
    * The API will assign an ID, generate a slug, and set timestamps automatically.
    * 
    * @param {string} content - The main content text
    * @param {string} [title] - Optional title (auto-extracted from first line if not provided)
    * @param {string[]} [tags] - Optional array of tags
    * @param {number} [capture_type_id] - Optional capture type ID
+   * @param {number} [capture_status_id] - Optional capture status ID
    * @returns {Promise<Capture>} Promise that resolves to the newly created capture
    * @throws {Error} If the API request fails or validation fails (422)
    * 
    * @example
    * ```ts
-   * const newCapture = await capturesService.createCapture('My new thought', 'My Title', ['tag1', 'tag2'], 1);
+   * const newCapture = await capturesService.createCapture('My new thought', 'My Title', ['tag1', 'tag2'], 1, 2);
    * console.log(`Created capture with ID: ${newCapture.id}`);
    * ```
    */
-  createCapture: async (content: string, title?: string, tags?: string[], capture_type_id?: number | null): Promise<Capture> => {
-    const response = await apiClient.post<Capture>('/captures', { content, title, tags, capture_type_id });
+  createCapture: async (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null): Promise<Capture> => {
+    const response = await apiClient.post<Capture>('/captures', { content, title, tags, capture_type_id, capture_status_id });
     return response.data;
   },
 
   /**
    * Update an existing capture
    * 
-   * Makes a PUT request to `/api/captures/{id}` to update the content, title, tags, and type.
+   * Makes a PUT request to `/api/captures/{id}` to update the content, title, tags, type, and status.
    * The updated_at timestamp will be automatically updated by the server.
    * Links will be automatically parsed and synced from the content.
    * 
@@ -119,18 +139,42 @@ export const capturesService = {
    * @param {string} [title] - Optional title (auto-extracted from first line if not provided)
    * @param {string[]} [tags] - Optional array of tags
    * @param {number} [capture_type_id] - Optional capture type ID
+   * @param {number} [capture_status_id] - Optional capture status ID
    * @returns {Promise<Capture>} Promise that resolves to the updated capture
    * @throws {Error} If the API request fails, capture is not found (404), or validation fails (422)
    * 
    * @example
    * ```ts
-   * const updated = await capturesService.updateCapture(1, 'Updated content', 'New Title', ['tag1'], 2);
+   * const updated = await capturesService.updateCapture(1, 'Updated content', 'New Title', ['tag1'], 2, 3);
    * console.log(`Updated at: ${updated.updated_at}`);
    * ```
    */
-  updateCapture: async (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null): Promise<Capture> => {
-    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags, capture_type_id });
+  updateCapture: async (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null): Promise<Capture> => {
+    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags, capture_type_id, capture_status_id });
     return response.data;
+  },
+
+  /**
+   * Update only the status of a capture
+   * 
+   * Makes a PUT request to `/api/captures/{id}` to update only the status field.
+   * This is a convenience method for changing status without updating other fields.
+   * 
+   * @param {number} id - The unique identifier of the capture
+   * @param {number} capture_status_id - The new status ID
+   * @returns {Promise<Capture>} Promise that resolves to the updated capture
+   * @throws {Error} If the API request fails, capture is not found (404), or validation fails (422)
+   * 
+   * @example
+   * ```ts
+   * const updated = await capturesService.updateCaptureStatus(1, 2);
+   * console.log(`Status updated to: ${updated.capture_status?.name}`);
+   * ```
+   */
+  updateCaptureStatus: async (id: number, capture_status_id: number): Promise<Capture> => {
+    // First get the current capture to preserve other fields
+    const current = await capturesService.getCapture(id);
+    return capturesService.updateCapture(id, current.content, current.title, current.tags, current.capture_type_id, capture_status_id);
   },
 
   /**

@@ -36,6 +36,8 @@ export interface CaptureInputProps {
   onSubmitHandlerReady?: (handler: () => Promise<void>) => void;
   /** Callback to get the form validity state */
   onFormValidityChange?: (isValid: boolean) => void;
+  /** Capture ID to track when editing different captures (resets form when changed) */
+  captureId?: number;
 }
 
 /**
@@ -72,6 +74,7 @@ export const CaptureInput = ({
   hideSubmitButton = false,
   onSubmitHandlerReady,
   onFormValidityChange,
+  captureId,
 }: CaptureInputProps): ReactElement => {
   const [title, setTitle] = useState<string>(initialTitle || '');
   const [content, setContent] = useState<string>(initialContent || '');
@@ -121,24 +124,37 @@ export const CaptureInput = ({
     loadStatuses();
   }, [initialCaptureStatusId]);
 
+  // Track the capture ID to reset form when editing a different capture
+  const [lastCaptureId, setLastCaptureId] = useState<number | undefined>(captureId);
+  
   // Update state when initial values change (e.g., when loading a different capture)
+  // Reset form when capture ID changes, otherwise only initialize once
   useEffect(() => {
-    if (initialTitle !== undefined) {
-      setTitle(initialTitle);
+    const captureIdChanged = captureId !== undefined && captureId !== lastCaptureId;
+    
+    if (captureIdChanged || lastCaptureId === undefined) {
+      if (initialTitle !== undefined) {
+        setTitle(initialTitle);
+      }
+      if (initialContent !== undefined) {
+        setContent(initialContent);
+      }
+      if (initialTags !== undefined) {
+        setTags(initialTags);
+      }
+      if (initialCaptureTypeId !== undefined) {
+        setCaptureTypeId(initialCaptureTypeId?.toString() || '');
+      }
+      if (initialCaptureStatusId !== undefined) {
+        setCaptureStatusId(initialCaptureStatusId?.toString() || '');
+      }
+      if (captureIdChanged) {
+        setLastCaptureId(captureId);
+      } else if (lastCaptureId === undefined) {
+        setLastCaptureId(captureId);
+      }
     }
-    if (initialContent !== undefined) {
-      setContent(initialContent);
-    }
-    if (initialTags !== undefined) {
-      setTags(initialTags);
-    }
-    if (initialCaptureTypeId !== undefined) {
-      setCaptureTypeId(initialCaptureTypeId?.toString() || '');
-    }
-    if (initialCaptureStatusId !== undefined) {
-      setCaptureStatusId(initialCaptureStatusId?.toString() || '');
-    }
-  }, [initialTitle, initialContent, initialTags, initialCaptureTypeId, initialCaptureStatusId]);
+  }, [initialTitle, initialContent, initialTags, initialCaptureTypeId, initialCaptureStatusId, captureId, lastCaptureId]);
   
   // Autocomplete hook
   const {
@@ -282,12 +298,13 @@ export const CaptureInput = ({
   };
 
   // Expose submit handler and form validity to parent if requested
+  // Update whenever form state changes to ensure latest values are used
   useEffect(() => {
     if (onSubmitHandlerReady) {
       onSubmitHandlerReady(handleSubmit);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onSubmitHandlerReady]);
+  }, [onSubmitHandlerReady, content, title, tags, captureTypeId, captureStatusId, disabled]);
 
   // Notify parent of form validity changes
   useEffect(() => {

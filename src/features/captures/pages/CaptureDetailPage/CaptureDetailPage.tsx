@@ -160,6 +160,7 @@ export const CaptureDetailPage = (): ReactElement => {
               initialTags={capture.tags?.join(', ') || ''}
               initialCaptureTypeId={capture.capture_type_id || null}
               initialCaptureStatusId={capture.capture_status_id || null}
+              captureId={capture.id}
               hideSubmitButton={true}
               onSubmitHandlerReady={(handler) => {
                 submitHandlerRef.current = handler;

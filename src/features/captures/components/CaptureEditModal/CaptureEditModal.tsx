@@ -18,8 +18,8 @@ export interface CaptureEditModalProps {
   onClose: () => void;
   /** The ID of the capture to edit */
   captureId: number | null;
-  /** Callback when capture is successfully updated */
-  onUpdateSuccess?: () => void;
+  /** Callback when capture is successfully updated, receives the updated capture data */
+  onUpdateSuccess?: (updatedCapture: Capture) => void;
 }
 
 /**
@@ -157,20 +157,34 @@ export const CaptureEditModal = ({
     try {
       await updateCapture(capture.id, content, title, tags, capture_type_id, capture_status_id);
       
-      // Close modal immediately to prevent reopening
-      onClose();
-      
-      // Call success callback after modal has started closing
-      // This ensures the modal state is cleared before graph refresh
-      setTimeout(() => {
-        if (onUpdateSuccess) {
-          onUpdateSuccess();
-        }
-        // Reset updating flag after a delay
-        setTimeout(() => {
+      // Fetch the updated capture to get all the latest data
+      if (captureId) {
+        try {
+          const updated = await capturesService.getCapture(captureId);
+          
+          // Close modal immediately to prevent reopening
+          onClose();
+          
+          // Call success callback with updated capture data
+          setTimeout(() => {
+            if (onUpdateSuccess) {
+              onUpdateSuccess(updated);
+            }
+            // Reset updating flag after a delay
+            setTimeout(() => {
+              isUpdatingRef.current = false;
+            }, 100);
+          }, 50);
+        } catch (err) {
+          console.error('Error fetching updated capture:', err);
+          // Still close the modal even if fetch fails
+          onClose();
           isUpdatingRef.current = false;
-        }, 100);
-      }, 50);
+        }
+      } else {
+        onClose();
+        isUpdatingRef.current = false;
+      }
     } catch (err) {
       // Error handling is done by CaptureForm via error prop
       console.error('Error updating note:', err);

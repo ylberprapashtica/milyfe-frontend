@@ -15,7 +15,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { capturesService } from '@/features/captures/services/captures.service';
-import { GraphData } from '@/features/captures/types';
+import { GraphData, Capture } from '@/features/captures/types';
 import { CaptureNode, CaptureNodeData } from './CaptureNode';
 import FloatingEdge from './FloatingEdge';
 import CustomConnectionLine from './CustomConnectionLine';
@@ -388,11 +388,41 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
   }, [tagFilter, statusFilter, typeFilter, setNodes, setEdges]);
 
   /**
-   * Handle successful capture update - refresh graph
+   * Handle successful capture update - update only the specific node
    */
-  const handleUpdateSuccess = useCallback(() => {
-    loadGraphData();
-  }, [loadGraphData]);
+  const handleUpdateSuccess = useCallback((updatedCapture: Capture) => {
+    // Find the node ID for this capture
+    const nodeId = nodes.find((node) => node.data.captureId === updatedCapture.id)?.id;
+    
+    if (!nodeId) {
+      // If node not found, fall back to reloading all data
+      loadGraphData();
+      return;
+    }
+
+    // Update only the specific node with the new data
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: updatedCapture.title || updatedCapture.content.split('\n')[0] || 'Untitled',
+              content: updatedCapture.content,
+              tags: updatedCapture.tags || [],
+              updated_at: updatedCapture.updated_at,
+              status: updatedCapture.capture_status?.name || 'fleeting',
+              statusColor: updatedCapture.capture_status?.color || undefined,
+              type: updatedCapture.capture_type?.name || undefined,
+              typeSymbol: updatedCapture.capture_type?.symbol || undefined,
+            },
+          };
+        }
+        return node;
+      })
+    );
+  }, [nodes, setNodes, loadGraphData]);
 
   useEffect(() => {
     loadGraphData();

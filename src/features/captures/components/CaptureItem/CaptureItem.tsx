@@ -128,6 +128,7 @@ export const CaptureItem = ({
 
       {capture.tags && capture.tags.length > 0 && (
         <div className="capture-item-tags">
+          <span className="capture-item-tags-label">Tags:</span>
           {capture.tags.map((tag, index) => (
             <span key={index} className="capture-item-tag">
               #{tag}

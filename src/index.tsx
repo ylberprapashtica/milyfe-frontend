@@ -4,6 +4,33 @@ import './index.scss';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Defer ResizeObserver callbacks to next frame to avoid "loop completed with undelivered notifications"
+const OriginalResizeObserver = window.ResizeObserver;
+window.ResizeObserver = class extends OriginalResizeObserver {
+  constructor(callback: ResizeObserverCallback) {
+    super((entries, observer) => {
+      requestAnimationFrame(() => {
+        callback(entries, observer);
+      });
+    });
+  }
+};
+
+// Suppress the warning if it still fires (e.g. from libraries we don't control)
+window.addEventListener(
+  'error',
+  (e: ErrorEvent) => {
+    if (
+      e.message === 'ResizeObserver loop completed with undelivered notifications.' ||
+      e.message === 'ResizeObserver loop limit exceeded'
+    ) {
+      e.stopImmediatePropagation();
+      return true;
+    }
+  },
+  true
+);
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );

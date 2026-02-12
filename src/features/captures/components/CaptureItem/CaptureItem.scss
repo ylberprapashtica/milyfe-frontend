@@ -115,8 +115,17 @@ $black: #000000;
 .capture-item-tags {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   margin-bottom: 12px;
+}
+
+.capture-item-tags-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba($chinese-violet, 0.8);
+  margin-right: 2px;
+  flex-shrink: 0;
 }
 
 .capture-item-tag {

@@ -3,6 +3,7 @@ import { Input } from '@/common/components/ui/Input';
 import { Textarea } from '@/common/components/ui/Textarea';
 import { Select } from '@/common/components/ui/Select';
 import { Autocomplete } from '@/common/components/ui/Autocomplete';
+import { TagsAutocomplete } from '@/features/captures/components/TagsAutocomplete';
 import { useCaptureAutocomplete } from '@/features/captures/hooks/useCaptureAutocomplete';
 import { capturesService } from '@/features/captures/services/captures.service';
 import { Capture, CaptureStatus, CaptureType } from '@/features/captures/types';
@@ -98,10 +99,15 @@ export const CaptureInput = ({
   const [captureStatuses, setCaptureStatuses] = useState<CaptureStatus[]>([]);
   const [loadingTypes, setLoadingTypes] = useState<boolean>(false);
   const [loadingStatuses, setLoadingStatuses] = useState<boolean>(false);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [tagSuggestionsVisible, setTagSuggestionsVisible] = useState<boolean>(false);
+  const [tagSelectedIndex, setTagSelectedIndex] = useState<number>(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const sketchCanvasRef = useRef<SketchCanvasRef>(null);
-  
-  // Load capture types and statuses on mount
+  const tagsWrapperRef = useRef<HTMLDivElement | null>(null);
+
+  // Load capture types, statuses, and tags on mount
   useEffect(() => {
     const loadTypes = async (): Promise<void> => {
       try {
@@ -134,8 +140,18 @@ export const CaptureInput = ({
       }
     };
     
+    const loadTags = async (): Promise<void> => {
+      try {
+        const tagList = await capturesService.getTags();
+        setAllTags(tagList.map((t) => t.name));
+      } catch (err) {
+        console.error('Error loading tags:', err);
+      }
+    };
+
     loadTypes();
     loadStatuses();
+    loadTags();
   }, [initialCaptureStatusId]);
 
   // Track the capture ID to reset form when editing a different capture
@@ -209,11 +225,108 @@ export const CaptureInput = ({
   };
 
   /**
+   * Get the current tag being typed (the part after the last comma)
+   */
+  const getCurrentTagQuery = (tagsValue: string): string => {
+    const lastCommaIdx = tagsValue.lastIndexOf(',');
+    const currentPart = lastCommaIdx >= 0 ? tagsValue.slice(lastCommaIdx + 1) : tagsValue;
+    return currentPart.trim().toLowerCase();
+  };
+
+  /**
+   * Get existing tags from the comma-separated value (to exclude from suggestions)
+   */
+  const getExistingTags = (tagsValue: string): string[] => {
+    return tagsValue
+      .split(',')
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+  };
+
+  /**
+   * Replace the current tag segment with the selected tag
+   */
+  const replaceCurrentTagWith = (tagsValue: string, selectedTag: string): string => {
+    const lastCommaIdx = tagsValue.lastIndexOf(',');
+    const before = lastCommaIdx >= 0 ? tagsValue.slice(0, lastCommaIdx + 1) : '';
+    return (before + selectedTag).trim();
+  };
+
+  /**
    * Handle tags input change
    */
   const handleTagsChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    setTags(e.target.value);
+    const newValue = e.target.value;
+    setTags(newValue);
+
+    const query = getCurrentTagQuery(newValue);
+    const existingTags = getExistingTags(newValue);
+
+    if (query.length > 0) {
+      const filtered = allTags.filter(
+        (tag) =>
+          tag.toLowerCase().includes(query) && !existingTags.includes(tag.toLowerCase())
+      );
+      const exactMatch = filtered.some((tag) => tag.toLowerCase() === query);
+      const createOption = !exactMatch && query.length > 0 ? [query] : [];
+      const suggestionsList = [...filtered, ...createOption];
+      setTagSuggestions(suggestionsList);
+      setTagSuggestionsVisible(suggestionsList.length > 0);
+      setTagSelectedIndex(0);
+    } else {
+      setTagSuggestionsVisible(false);
+    }
   };
+
+  /**
+   * Handle tag suggestion select
+   */
+  const handleTagSelect = (selectedTag: string): void => {
+    const newValue = replaceCurrentTagWith(tags, selectedTag);
+    setTags(newValue);
+    setTagSuggestionsVisible(false);
+  };
+
+  /**
+   * Handle tags input keydown (ArrowUp, ArrowDown, Enter, Escape)
+   */
+  const handleTagsKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (!tagSuggestionsVisible || tagSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setTagSelectedIndex((prev) => (prev + 1) % tagSuggestions.length);
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setTagSelectedIndex((prev) => (prev - 1 + tagSuggestions.length) % tagSuggestions.length);
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTagSelect(tagSuggestions[tagSelectedIndex]);
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setTagSuggestionsVisible(false);
+    }
+  };
+
+  /**
+   * Close tag suggestions when clicking outside
+   */
+  useEffect(() => {
+    if (!tagSuggestionsVisible) return;
+    const handleClickOutside = (e: MouseEvent): void => {
+      if (tagsWrapperRef.current && !tagsWrapperRef.current.contains(e.target as Node)) {
+        setTagSuggestionsVisible(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [tagSuggestionsVisible]);
 
   /**
    * Handle capture type select change
@@ -349,6 +462,46 @@ export const CaptureInput = ({
     <div className="capture-input-container">
       <div className="capture-input-field" style={{ position: 'relative' }}>
         <div className={`capture-input-content-slot ${showSketchSection ? 'capture-input-content-slot--sketch' : ''} ${showVoiceSection ? 'capture-input-content-slot--voice' : ''}`}>
+          <div className="capture-input-toolbar">
+            <button
+              type="button"
+              className="capture-input-sketch-toggle"
+              onClick={async () => {
+                if (showSketchSection) {
+                  const dataUrl = await sketchCanvasRef.current?.exportImage();
+                  if (dataUrl) setSketchImage(dataUrl);
+                  setShowSketchSection(false);
+                } else {
+                  setShowSketchSection(true);
+                  setShowVoiceSection(false);
+                }
+              }}
+              disabled={disabled}
+            >
+              {showSketchSection ? '← Back to text' : '+ Add sketch'}
+              {sketchImage && !showSketchSection && (
+                <span className="capture-input-sketch-badge">1</span>
+              )}
+            </button>
+            <button
+              type="button"
+              className="capture-input-voice-toggle"
+              onClick={() => {
+                if (showVoiceSection) {
+                  setShowVoiceSection(false);
+                } else {
+                  setShowVoiceSection(true);
+                  setShowSketchSection(false);
+                }
+              }}
+              disabled={disabled}
+            >
+              {showVoiceSection ? '← Back to text' : '+ Add voice'}
+              {voiceAudio && !showVoiceSection && (
+                <span className="capture-input-voice-badge">1</span>
+              )}
+            </button>
+          </div>
           {!showSketchSection && !showVoiceSection && (
             <>
               <Textarea
@@ -408,44 +561,6 @@ export const CaptureInput = ({
               />
             </div>
           )}
-          <button
-            type="button"
-            className="capture-input-sketch-toggle"
-            onClick={async () => {
-              if (showSketchSection) {
-                const dataUrl = await sketchCanvasRef.current?.exportImage();
-                if (dataUrl) setSketchImage(dataUrl);
-                setShowSketchSection(false);
-              } else {
-                setShowSketchSection(true);
-                setShowVoiceSection(false);
-              }
-            }}
-            disabled={disabled}
-          >
-            {showSketchSection ? '← Back to text' : '+ Add sketch'}
-            {sketchImage && !showSketchSection && (
-              <span className="capture-input-sketch-badge">1</span>
-            )}
-          </button>
-          <button
-            type="button"
-            className="capture-input-voice-toggle"
-            onClick={() => {
-              if (showVoiceSection) {
-                setShowVoiceSection(false);
-              } else {
-                setShowVoiceSection(true);
-                setShowSketchSection(false);
-              }
-            }}
-            disabled={disabled}
-          >
-            {showVoiceSection ? '← Back to text' : '+ Add voice'}
-            {voiceAudio && !showVoiceSection && (
-              <span className="capture-input-voice-badge">1</span>
-            )}
-          </button>
         </div>
 
         <Select
@@ -491,22 +606,32 @@ export const CaptureInput = ({
             💡 AI will automatically generate a title if left empty
           </div>
         )}
-      </div>
 
-      <Input
-        id="capture-tags"
-        label="Tags (optional)"
-        type="text"
-        placeholder="Leave empty for AI-generated tags"
-        value={tags}
-        onChange={handleTagsChange}
-        disabled={disabled}
-      />
-      {!tags && (
-        <div className="capture-input-hint" style={{ marginTop: '-8px', marginBottom: '12px' }}>
-          🤖 AI will automatically suggest relevant tags if left empty
+        <div ref={tagsWrapperRef} className="capture-input-tags-wrapper">
+          <Input
+            id="capture-tags"
+            label="Tags (optional)"
+            type="text"
+            placeholder="e.g. work, project, idea (comma-separated)"
+            value={tags}
+            onChange={handleTagsChange}
+            onKeyDown={handleTagsKeyDown}
+            disabled={disabled}
+          />
+          <TagsAutocomplete
+            suggestions={tagSuggestions}
+            selectedIndex={tagSelectedIndex}
+            onSelect={handleTagSelect}
+            onClose={() => setTagSuggestionsVisible(false)}
+            visible={tagSuggestionsVisible}
+          />
         </div>
-      )}
+        {!tags && (
+          <div className="capture-input-hint" style={{ marginTop: '-8px', marginBottom: '12px' }}>
+            Add tags separated by commas. AI can only suggest from tags you have already created.
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -103,6 +103,19 @@ export const capturesService = {
   },
 
   /**
+   * Get all tags for the current user
+   *
+   * Makes a GET request to `/api/captures/tags` and returns all tags.
+   *
+   * @returns {Promise<{id: number, name: string}[]>} Promise that resolves to an array of tags
+   * @throws {Error} If the API request fails
+   */
+  getTags: async (): Promise<{ id: number; name: string }[]> => {
+    const response = await apiClient.get<{ id: number; name: string }[]>('/captures/tags');
+    return response.data;
+  },
+
+  /**
    * Create a new capture
    * 
    * Makes a POST request to `/api/captures` with the content and optional title/tags/type/status.

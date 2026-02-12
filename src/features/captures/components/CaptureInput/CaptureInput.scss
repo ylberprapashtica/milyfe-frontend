@@ -24,6 +24,13 @@
   margin-bottom: 16px;
 }
 
+.capture-input-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
 .capture-input-sketch-toggle {
   display: inline-flex;
   align-items: center;
@@ -106,5 +113,9 @@
 
 .capture-input-voice-panel {
   min-height: 200px;
+}
+
+.capture-input-tags-wrapper {
+  position: relative;
 }
 

@@ -214,6 +214,29 @@ $white: #FFFFFF;
   }
 }
 
+.captures-page-sidebar-resize {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 11;
+  background: transparent;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba($chinese-violet, 0.2);
+  }
+
+  &:active {
+    background: rgba($chinese-violet, 0.3);
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
 .captures-page-graph {
   width: 100%;
   height: 100%;

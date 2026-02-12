@@ -1,7 +1,8 @@
-import { ReactElement } from 'react';
+import { ReactElement, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Capture } from '@/features/captures/types';
 import { renderLinks } from '@/features/captures/utils/linkParser';
+import { ConfirmModal } from '@/common/components/ui';
 import './CaptureItem.scss';
 
 /**
@@ -16,6 +17,8 @@ export interface CaptureItemProps {
   onDelete: (id: number) => Promise<void>;
   /** Optional callback when a capture should be opened (e.g. in a modal instead of navigating) */
   onOpenCapture?: (captureId: number) => void;
+  /** Optional callback when a link should be deleted (shows confirm modal) */
+  onDeleteLink?: (linkId: number) => Promise<void>;
   /** Whether to show the highlighted state (e.g. scrolled to from graph node click) */
   highlighted?: boolean;
   /** Whether the component should be disabled */
@@ -50,10 +53,14 @@ export const CaptureItem = ({
   onUpdate,
   onDelete,
   onOpenCapture,
+  onDeleteLink,
   highlighted = false,
   disabled = false,
 }: CaptureItemProps): ReactElement => {
   const navigate = useNavigate();
+  const [showDeleteLinkModal, setShowDeleteLinkModal] = useState(false);
+  const [linkToDeleteId, setLinkToDeleteId] = useState<number | null>(null);
+  const [showDeleteCaptureModal, setShowDeleteCaptureModal] = useState(false);
 
   /**
    * Handle opening capture: modal if onOpenCapture provided, else navigate
@@ -75,21 +82,49 @@ export const CaptureItem = ({
     navigate(`/captures?search=${encodeURIComponent(linkTitle)}`);
   };
 
-  /**
-   * Handle delete action
-   */
-  const handleDelete = async (e: React.MouseEvent): Promise<void> => {
+  const handleDeleteClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this note?')) {
-      return;
-    }
+    setShowDeleteCaptureModal(true);
+  }, []);
 
+  const handleConfirmDeleteCapture = useCallback(async () => {
     try {
       await onDelete(capture.id);
+      setShowDeleteCaptureModal(false);
     } catch (err) {
       console.error('Error deleting capture:', err);
     }
-  };
+  }, [capture.id, onDelete]);
+
+  const handleCloseDeleteCaptureModal = useCallback(() => {
+    setShowDeleteCaptureModal(false);
+  }, []);
+
+  const handleDeleteLinkClick = useCallback(
+    (e: React.MouseEvent, linkId: number) => {
+      e.stopPropagation();
+      setLinkToDeleteId(linkId);
+      setShowDeleteLinkModal(true);
+    },
+    []
+  );
+
+  const handleConfirmDeleteLink = useCallback(async () => {
+    if (linkToDeleteId == null || !onDeleteLink) return;
+    try {
+      await onDeleteLink(linkToDeleteId);
+    } catch (err) {
+      console.error('Error deleting link:', err);
+    } finally {
+      setShowDeleteLinkModal(false);
+      setLinkToDeleteId(null);
+    }
+  }, [linkToDeleteId, onDeleteLink]);
+
+  const handleCloseDeleteLinkModal = useCallback(() => {
+    setShowDeleteLinkModal(false);
+    setLinkToDeleteId(null);
+  }, []);
 
   const displayTitle = capture.title || capture.content.split('\n')[0]?.substring(0, 100) || 'Untitled';
   const displayContent = capture.content;
@@ -141,15 +176,27 @@ export const CaptureItem = ({
         <div className="capture-item-links">
           <span className="capture-item-links-label">Links to:</span>
           {capture.links_to.map((linkedNote) => (
-            <button
-              key={linkedNote.id}
-              className="capture-item-link"
-              onClick={() =>
-                onOpenCapture ? onOpenCapture(linkedNote.id) : navigate(`/captures/${linkedNote.id}`)
-              }
-            >
-              {linkedNote.title || linkedNote.slug}
-            </button>
+            <span key={linkedNote.id} className="capture-item-link-wrap">
+              <button
+                className="capture-item-link"
+                onClick={() =>
+                  onOpenCapture ? onOpenCapture(linkedNote.id) : navigate(`/captures/${linkedNote.id}`)
+                }
+              >
+                {linkedNote.title || linkedNote.slug}
+              </button>
+              {onDeleteLink && linkedNote.pivot?.id != null && (
+                <button
+                  type="button"
+                  className="capture-item-link-delete"
+                  onClick={(e) => handleDeleteLinkClick(e, linkedNote.pivot!.id)}
+                  title="Delete link"
+                  aria-label="Delete link"
+                >
+                  ×
+                </button>
+              )}
+            </span>
           ))}
         </div>
       )}
@@ -158,18 +205,40 @@ export const CaptureItem = ({
         <div className="capture-item-links">
           <span className="capture-item-links-label">Linked by:</span>
           {capture.linked_from.map((linkedNote) => (
-            <button
-              key={linkedNote.id}
-              className="capture-item-link"
-              onClick={() =>
-                onOpenCapture ? onOpenCapture(linkedNote.id) : navigate(`/captures/${linkedNote.id}`)
-              }
-            >
-              {linkedNote.title || linkedNote.slug}
-            </button>
+            <span key={linkedNote.id} className="capture-item-link-wrap">
+              <button
+                className="capture-item-link"
+                onClick={() =>
+                  onOpenCapture ? onOpenCapture(linkedNote.id) : navigate(`/captures/${linkedNote.id}`)
+                }
+              >
+                {linkedNote.title || linkedNote.slug}
+              </button>
+              {onDeleteLink && linkedNote.pivot?.id != null && (
+                <button
+                  type="button"
+                  className="capture-item-link-delete"
+                  onClick={(e) => handleDeleteLinkClick(e, linkedNote.pivot!.id)}
+                  title="Delete link"
+                  aria-label="Delete link"
+                >
+                  ×
+                </button>
+              )}
+            </span>
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={showDeleteLinkModal}
+        onClose={handleCloseDeleteLinkModal}
+        onConfirm={handleConfirmDeleteLink}
+        title="Delete link"
+        message="Do you want to delete that link?"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
 
       <div className="capture-item-actions">
         <button
@@ -181,12 +250,22 @@ export const CaptureItem = ({
         </button>
         <button
           className="capture-item-button capture-item-button-delete"
-          onClick={handleDelete}
+          onClick={handleDeleteClick}
           disabled={disabled}
         >
           Delete
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteCaptureModal}
+        onClose={handleCloseDeleteCaptureModal}
+        onConfirm={handleConfirmDeleteCapture}
+        title="Delete note"
+        message="Are you sure you want to delete this note?"
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

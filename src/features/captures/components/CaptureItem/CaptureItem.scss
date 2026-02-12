@@ -92,14 +92,16 @@ $black: #000000;
 
 .capture-item-sketch {
   margin-top: 8px;
+  width: 100%;
 }
 
 .capture-item-sketch-thumb {
-  max-width: 120px;
-  max-height: 80px;
+  width: 100%;
+  max-height: 240px;
   object-fit: contain;
   border-radius: 8px;
   border: 1px solid rgba($chinese-violet, 0.2);
+  display: block;
 }
 
 .capture-item-voice {
@@ -143,6 +145,34 @@ $black: #000000;
   gap: 8px;
   align-items: center;
   margin-bottom: 12px;
+}
+
+.capture-item-link-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.capture-item-link-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(220, 53, 69, 0.15);
+  color: rgba(220, 53, 69, 0.9);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    background: rgba(220, 53, 69, 0.25);
+    color: rgba(220, 53, 69, 1);
+  }
 }
 
 .capture-item-links-label {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ReactElement, ChangeEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, ReactElement, ChangeEvent } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCaptures } from '@/features/captures/hooks/useCaptures';
 import { useCapture } from '@/features/captures/hooks/useCapture';
@@ -44,12 +44,27 @@ export const CapturesPage = (): ReactElement => {
     return true;
   };
   
+  const SIDEBAR_WIDTH_KEY = 'captures-sidebar-width';
+  const SIDEBAR_WIDTH_MIN = 280;
+  const SIDEBAR_WIDTH_MAX = 600;
+  const getInitialSidebarWidth = (): number => {
+    if (typeof window === 'undefined') return 350;
+    const stored = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+    if (stored) {
+      const n = parseInt(stored, 10);
+      if (!Number.isNaN(n) && n >= SIDEBAR_WIDTH_MIN && n <= SIDEBAR_WIDTH_MAX) return n;
+    }
+    return 350;
+  };
+
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(getInitialSidebarState());
+  const [sidebarWidth, setSidebarWidth] = useState<number>(getInitialSidebarWidth);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [editCaptureId, setEditCaptureId] = useState<number | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [highlightedCaptureId, setHighlightedCaptureId] = useState<number | null>(null);
   const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isResizingRef = useRef<boolean>(false);
 
   // Clear highlight timeout on unmount
   useEffect(() => {
@@ -169,6 +184,45 @@ export const CapturesPage = (): ReactElement => {
     setTypeFilter([]);
   };
 
+  const lastSidebarWidthRef = useRef<number>(sidebarWidth);
+  lastSidebarWidthRef.current = sidebarWidth;
+
+  /**
+   * Resize sidebar by dragging (desktop only); persist width to localStorage on mouseup
+   */
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    if (window.innerWidth <= 768) return;
+    isResizingRef.current = true;
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      if (!isResizingRef.current) return;
+      const x = moveEvent.clientX;
+      const next = Math.max(SIDEBAR_WIDTH_MIN, Math.min(SIDEBAR_WIDTH_MAX, x));
+      setSidebarWidth(next);
+    };
+    const onMouseUp = () => {
+      isResizingRef.current = false;
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(lastSidebarWidthRef.current));
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, []);
+
+  /**
+   * Delete a link between captures (from sidebar); refreshes list and graph
+   */
+  const handleDeleteLink = async (linkId: number): Promise<void> => {
+    await capturesService.deleteLink(linkId);
+    await reload();
+    setRefreshTrigger((t) => t + 1);
+  };
+
   /**
    * Open edit modal for a capture (e.g. from sidebar Open)
    */
@@ -262,18 +316,30 @@ export const CapturesPage = (): ReactElement => {
       </div>
 
       <div className="captures-page-layout">
-        <aside className={`captures-page-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <aside
+          className={`captures-page-sidebar ${sidebarOpen ? 'open' : 'closed'}`}
+          style={{ width: sidebarOpen ? sidebarWidth : undefined }}
+        >
           <CaptureList
             captures={filteredCaptures}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
             onOpenCapture={handleOpenCapture}
+            onDeleteLink={handleDeleteLink}
             highlightedCaptureId={highlightedCaptureId}
             disabled={isLoading}
             loading={loading && filteredCaptures.length === 0}
           />
         </aside>
-        
+        {sidebarOpen && (
+          <div
+            className="captures-page-sidebar-resize"
+            style={{ left: sidebarWidth - 3 }}
+            onMouseDown={handleResizeStart}
+            role="separator"
+            aria-label="Resize sidebar"
+          />
+        )}
         <div className="captures-page-graph">
           <GraphView
             statusFilter={statusFilter}

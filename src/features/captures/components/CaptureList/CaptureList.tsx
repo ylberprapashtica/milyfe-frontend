@@ -15,6 +15,8 @@ export interface CaptureListProps {
   onDelete: (id: number) => Promise<void>;
   /** Optional callback when a capture should be opened (e.g. in a modal) */
   onOpenCapture?: (captureId: number) => void;
+  /** Optional callback when a link should be deleted (confirm modal in CaptureItem) */
+  onDeleteLink?: (linkId: number) => Promise<void>;
   /** Optional capture ID to show as highlighted (e.g. scrolled to from graph) */
   highlightedCaptureId?: number | null;
   /** Whether the list should be disabled */
@@ -53,6 +55,7 @@ export const CaptureList = ({
   onUpdate,
   onDelete,
   onOpenCapture,
+  onDeleteLink,
   highlightedCaptureId = null,
   disabled = false,
   loading = false,
@@ -88,6 +91,7 @@ export const CaptureList = ({
             onUpdate={onUpdate}
             onDelete={onDelete}
             onOpenCapture={onOpenCapture}
+            onDeleteLink={onDeleteLink}
             highlighted={highlightedCaptureId === capture.id}
             disabled={disabled}
           />

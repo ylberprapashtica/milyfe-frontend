@@ -13,6 +13,10 @@ export interface CaptureListProps {
   onUpdate: (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null) => Promise<void>;
   /** Callback function when a capture is deleted */
   onDelete: (id: number) => Promise<void>;
+  /** Optional callback when a capture should be opened (e.g. in a modal) */
+  onOpenCapture?: (captureId: number) => void;
+  /** Optional capture ID to show as highlighted (e.g. scrolled to from graph) */
+  highlightedCaptureId?: number | null;
   /** Whether the list should be disabled */
   disabled?: boolean;
   /** Whether the list is currently loading */
@@ -48,6 +52,8 @@ export const CaptureList = ({
   captures,
   onUpdate,
   onDelete,
+  onOpenCapture,
+  highlightedCaptureId = null,
   disabled = false,
   loading = false,
 }: CaptureListProps): ReactElement => {
@@ -81,6 +87,8 @@ export const CaptureList = ({
             capture={capture}
             onUpdate={onUpdate}
             onDelete={onDelete}
+            onOpenCapture={onOpenCapture}
+            highlighted={highlightedCaptureId === capture.id}
             disabled={disabled}
           />
         ))}

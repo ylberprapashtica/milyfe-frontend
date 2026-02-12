@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactElement, ChangeEvent } from 'react';
+import { useState, useEffect, useRef, ReactElement, ChangeEvent } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useCaptures } from '@/features/captures/hooks/useCaptures';
 import { useCapture } from '@/features/captures/hooks/useCapture';
@@ -6,6 +6,7 @@ import { capturesService } from '@/features/captures/services/captures.service';
 import { Capture } from '@/features/captures/types';
 import { CaptureList } from '@/features/captures/components/CaptureList';
 import { GraphView, GraphFilters } from '@/features/captures/components/GraphView';
+import { CaptureEditModal } from '@/features/captures/components/CaptureEditModal';
 import { Button } from '@/common/components/ui/Button';
 import './CapturesPage.scss';
 
@@ -44,6 +45,20 @@ export const CapturesPage = (): ReactElement => {
   };
   
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(getInitialSidebarState());
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [editCaptureId, setEditCaptureId] = useState<number | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [highlightedCaptureId, setHighlightedCaptureId] = useState<number | null>(null);
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear highlight timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle responsive sidebar state
   useEffect(() => {
@@ -154,6 +169,55 @@ export const CapturesPage = (): ReactElement => {
     setTypeFilter([]);
   };
 
+  /**
+   * Open edit modal for a capture (e.g. from sidebar Open)
+   */
+  const handleOpenCapture = (id: number): void => {
+    setEditCaptureId(id);
+    setShowEditModal(true);
+  };
+
+  /**
+   * Close edit modal
+   */
+  const handleCloseEditModal = (): void => {
+    setEditCaptureId(null);
+    setShowEditModal(false);
+  };
+
+  /**
+   * After successful update in modal: refresh list and graph
+   */
+  const handleEditUpdateSuccess = (): void => {
+    reload();
+    setRefreshTrigger((t) => t + 1);
+  };
+
+  /**
+   * When a graph node (body) is clicked: scroll to that capture in the sidebar and show highlight.
+   * In responsive (mobile) mode we do not auto-open the sidebar.
+   */
+  const handleNodeClick = (captureId: number): void => {
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = null;
+    }
+    setHighlightedCaptureId(captureId);
+    if (typeof window !== 'undefined' && window.innerWidth > 768) {
+      setSidebarOpen(true);
+    }
+    requestAnimationFrame(() => {
+      document.getElementById(`capture-item-${captureId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    });
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedCaptureId(null);
+      highlightTimeoutRef.current = null;
+    }, 2500);
+  };
+
   const isLoading = loading || updateLoading;
 
   return (
@@ -203,15 +267,29 @@ export const CapturesPage = (): ReactElement => {
             captures={filteredCaptures}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
+            onOpenCapture={handleOpenCapture}
+            highlightedCaptureId={highlightedCaptureId}
             disabled={isLoading}
             loading={loading && filteredCaptures.length === 0}
           />
         </aside>
         
         <div className="captures-page-graph">
-          <GraphView statusFilter={statusFilter} typeFilter={typeFilter} />
+          <GraphView
+            statusFilter={statusFilter}
+            typeFilter={typeFilter}
+            onTitleClick={handleOpenCapture}
+            onNodeClick={handleNodeClick}
+            refreshTrigger={refreshTrigger}
+          />
         </div>
       </div>
+      <CaptureEditModal
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        captureId={editCaptureId}
+        onUpdateSuccess={handleEditUpdateSuccess}
+      />
     </div>
   );
 };

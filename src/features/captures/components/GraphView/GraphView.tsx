@@ -16,19 +16,23 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { capturesService } from '@/features/captures/services/captures.service';
-import { GraphData, Capture } from '@/features/captures/types';
+import { GraphData } from '@/features/captures/types';
 import { CaptureNode, CaptureNodeData } from './CaptureNode';
 import FloatingEdge from './FloatingEdge';
 import CustomConnectionLine from './CustomConnectionLine';
 import { ConfirmModal } from '@/common/components/ui';
-import { CaptureEditModal } from '@/features/captures/components/CaptureEditModal';
 import { CaptureCreateModal } from '@/features/captures/components/CaptureCreateModal';
 import './GraphView.scss';
 
 /**
- * Context for passing onTitleClick callback to CaptureNode
+ * Context for passing onTitleClick callback to CaptureNode (opens modal)
  */
 const NodeTitleClickContext = createContext<((captureId: number) => void) | undefined>(undefined);
+
+/**
+ * Context for passing onNodeClick callback (scroll to sidebar + highlight)
+ */
+const NodeClickContext = createContext<((captureId: number) => void) | undefined>(undefined);
 
 /**
  * Props for the GraphView component
@@ -40,6 +44,12 @@ export interface GraphViewProps {
   statusFilter?: string[];
   /** Optional filter by type names (inclusive - only show nodes with these types) */
   typeFilter?: string[];
+  /** Optional callback when node title is clicked (e.g. open edit modal) */
+  onTitleClick?: (captureId: number) => void;
+  /** Optional callback when node body is clicked (e.g. scroll to capture in sidebar) */
+  onNodeClick?: (captureId: number) => void;
+  /** When this value changes, graph data is refetched (e.g. after modal update) */
+  refreshTrigger?: number;
 }
 
 /**
@@ -51,11 +61,12 @@ interface EdgeData extends Record<string, unknown> {
 }
 
 /**
- * Wrapper component for CaptureNode that uses context for onTitleClick
+ * Wrapper component for CaptureNode that uses context for onTitleClick and onNodeClick
  */
 const CaptureNodeWithContext = (props: { id: string; data: CaptureNodeData }) => {
   const onTitleClick = useContext(NodeTitleClickContext);
-  return <CaptureNode {...props} onTitleClick={onTitleClick} />;
+  const onNodeClick = useContext(NodeClickContext);
+  return <CaptureNode {...props} onTitleClick={onTitleClick} onNodeClick={onNodeClick} />;
 };
 
 const nodeTypes = {
@@ -99,15 +110,20 @@ const connectionLineStyle = {
  * <GraphView tagFilter={['tag1', 'tag2']} />
  * ```
  */
-export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProps): ReactElement => {
+export const GraphView = ({
+  tagFilter,
+  statusFilter,
+  typeFilter,
+  onTitleClick,
+  onNodeClick,
+  refreshTrigger,
+}: GraphViewProps): ReactElement => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CaptureNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<EdgeData>>([]);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [edgeToDelete, setEdgeToDelete] = useState<Edge<EdgeData> | null>(null);
-  const [showEditModal, setShowEditModal] = useState<boolean>(false);
-  const [editCaptureId, setEditCaptureId] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [createPosition, setCreatePosition] = useState<{ x: number; y: number } | null>(null);
   const reactFlowInstanceRef = useRef<ReactFlowInstance<Node<CaptureNodeData>, Edge<EdgeData>> | null>(null);
@@ -153,24 +169,6 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
   const handleCloseDeleteModal = useCallback(() => {
     setShowDeleteModal(false);
     setEdgeToDelete(null);
-  }, []);
-
-  /**
-   * Handle edit modal close
-   */
-  const handleCloseEditModal = useCallback(() => {
-    // Clear captureId first to prevent modal from reopening
-    setEditCaptureId(null);
-    // Then close the modal
-    setShowEditModal(false);
-  }, []);
-
-  /**
-   * Handle node title click - open edit modal
-   */
-  const handleNodeTitleClick = useCallback((captureId: number) => {
-    setEditCaptureId(captureId);
-    setShowEditModal(true);
   }, []);
 
   /**
@@ -420,43 +418,6 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
   }, [tagFilter, statusFilter, typeFilter, setNodes, setEdges]);
 
   /**
-   * Handle successful capture update - update only the specific node
-   */
-  const handleUpdateSuccess = useCallback((updatedCapture: Capture) => {
-    // Find the node ID for this capture
-    const nodeId = nodes.find((node) => node.data.captureId === updatedCapture.id)?.id;
-    
-    if (!nodeId) {
-      // If node not found, fall back to reloading all data
-      loadGraphData();
-      return;
-    }
-
-    // Update only the specific node with the new data
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === nodeId) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              label: updatedCapture.title || updatedCapture.content.split('\n')[0] || 'Untitled',
-              content: updatedCapture.content,
-              tags: updatedCapture.tags || [],
-              updated_at: updatedCapture.updated_at,
-              status: updatedCapture.capture_status?.name || 'fleeting',
-              statusColor: updatedCapture.capture_status?.color || undefined,
-              type: updatedCapture.capture_type?.name || undefined,
-              typeSymbol: updatedCapture.capture_type?.symbol || undefined,
-            },
-          };
-        }
-        return node;
-      })
-    );
-  }, [nodes, setNodes, loadGraphData]);
-
-  /**
    * Handle successful capture creation - reload graph to show new node
    */
   const handleCreateSuccess = useCallback(() => {
@@ -465,7 +426,7 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
 
   useEffect(() => {
     loadGraphData();
-  }, [loadGraphData]);
+  }, [loadGraphData, refreshTrigger]);
 
   if (loading) {
     return (
@@ -489,7 +450,8 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
   }
 
   return (
-    <NodeTitleClickContext.Provider value={handleNodeTitleClick}>
+    <NodeTitleClickContext.Provider value={onTitleClick}>
+      <NodeClickContext.Provider value={onNodeClick}>
       <div className="graph-view">
         <ReactFlow
           nodes={nodes}
@@ -528,12 +490,6 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
           confirmText="Delete"
           cancelText="Cancel"
         />
-        <CaptureEditModal
-          isOpen={showEditModal}
-          onClose={handleCloseEditModal}
-          captureId={editCaptureId}
-          onUpdateSuccess={handleUpdateSuccess}
-        />
         <CaptureCreateModal
           isOpen={showCreateModal}
           onClose={handleCloseCreateModal}
@@ -541,6 +497,7 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
           initialPosition={createPosition ?? undefined}
         />
       </div>
+      </NodeClickContext.Provider>
     </NodeTitleClickContext.Provider>
   );
 };

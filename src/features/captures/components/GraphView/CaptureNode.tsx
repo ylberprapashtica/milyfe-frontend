@@ -30,14 +30,16 @@ export interface CaptureNodeData extends Record<string, unknown> {
 export interface CaptureNodeProps {
   id: string;
   data: CaptureNodeData;
-  /** Optional callback when title is clicked. If provided, will be called instead of navigating. */
+  /** Optional callback when title is clicked (e.g. open edit modal). */
   onTitleClick?: (captureId: number) => void;
+  /** Optional callback when node body/area is clicked (e.g. scroll to capture in sidebar). */
+  onNodeClick?: (captureId: number) => void;
 }
 
 /**
  * Custom node component for displaying captures with easy connect functionality
  */
-export const CaptureNode = ({ id, data, onTitleClick }: CaptureNodeProps) => {
+export const CaptureNode = ({ id, data, onTitleClick, onNodeClick }: CaptureNodeProps) => {
   const navigate = useNavigate();
   const connection = useConnection();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -69,14 +71,23 @@ export const CaptureNode = ({ id, data, onTitleClick }: CaptureNodeProps) => {
   };
 
   /**
-   * Handle opening the capture detail page or modal
+   * Handle title click: open edit modal or navigate to detail page
    */
-  const handleOpen = (e: React.MouseEvent) => {
+  const handleTitleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onTitleClick) {
       onTitleClick(data.captureId);
     } else {
       navigate(`/captures/${data.captureId}`);
+    }
+  };
+
+  /**
+   * Handle click anywhere on the node (except title): scroll to capture in sidebar and highlight
+   */
+  const handleNodeAreaClick = (e: React.MouseEvent) => {
+    if (onNodeClick) {
+      onNodeClick(data.captureId);
     }
   };
 
@@ -110,6 +121,7 @@ export const CaptureNode = ({ id, data, onTitleClick }: CaptureNodeProps) => {
     <div 
       className={`graph-node ${isExpanded ? 'graph-node--expanded' : ''} ${recentlyUpdated ? 'graph-node--recently-updated' : ''} ${getStatusClass(status)} ${isFiltered ? 'graph-node--filtered' : ''}`}
       style={getBorderStyle()}
+      onClick={handleNodeAreaClick}
     >
       {/* Type symbol background */}
       {data.typeSymbol && (
@@ -141,7 +153,7 @@ export const CaptureNode = ({ id, data, onTitleClick }: CaptureNodeProps) => {
       <div className="graph-node-body">
         <div 
           className="graph-node-title"
-          onClick={handleOpen}
+          onClick={handleTitleClick}
           title="Click to open/edit"
         >
           {data.label}

@@ -14,6 +14,10 @@ export interface CaptureItemProps {
   onUpdate: (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null) => Promise<void>;
   /** Callback function when a capture is deleted */
   onDelete: (id: number) => Promise<void>;
+  /** Optional callback when a capture should be opened (e.g. in a modal instead of navigating) */
+  onOpenCapture?: (captureId: number) => void;
+  /** Whether to show the highlighted state (e.g. scrolled to from graph node click) */
+  highlighted?: boolean;
   /** Whether the component should be disabled */
   disabled?: boolean;
 }
@@ -45,15 +49,21 @@ export const CaptureItem = ({
   capture,
   onUpdate,
   onDelete,
+  onOpenCapture,
+  highlighted = false,
   disabled = false,
 }: CaptureItemProps): ReactElement => {
   const navigate = useNavigate();
 
   /**
-   * Handle navigation to detail page
+   * Handle opening capture: modal if onOpenCapture provided, else navigate
    */
   const handleOpen = (): void => {
-    navigate(`/captures/${capture.id}`);
+    if (onOpenCapture) {
+      onOpenCapture(capture.id);
+    } else {
+      navigate(`/captures/${capture.id}`);
+    }
   };
 
   /**
@@ -85,7 +95,10 @@ export const CaptureItem = ({
   const displayContent = capture.content;
 
   return (
-    <div className="capture-item">
+    <div
+      className={`capture-item${highlighted ? ' capture-item--highlighted' : ''}`}
+      id={`capture-item-${capture.id}`}
+    >
       <div className="capture-item-header">
         <h3 className="capture-item-title">{displayTitle}</h3>
         <span className="capture-item-date">
@@ -130,7 +143,9 @@ export const CaptureItem = ({
             <button
               key={linkedNote.id}
               className="capture-item-link"
-              onClick={() => navigate(`/captures/${linkedNote.id}`)}
+              onClick={() =>
+                onOpenCapture ? onOpenCapture(linkedNote.id) : navigate(`/captures/${linkedNote.id}`)
+              }
             >
               {linkedNote.title || linkedNote.slug}
             </button>
@@ -145,7 +160,9 @@ export const CaptureItem = ({
             <button
               key={linkedNote.id}
               className="capture-item-link"
-              onClick={() => navigate(`/captures/${linkedNote.id}`)}
+              onClick={() =>
+                onOpenCapture ? onOpenCapture(linkedNote.id) : navigate(`/captures/${linkedNote.id}`)
+              }
             >
               {linkedNote.title || linkedNote.slug}
             </button>

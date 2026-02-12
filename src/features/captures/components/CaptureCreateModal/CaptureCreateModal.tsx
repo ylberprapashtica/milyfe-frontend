@@ -104,7 +104,8 @@ export const CaptureCreateModal = ({
     capture_type_id?: number | null,
     capture_status_id?: number | null,
     sketch_image?: string | null,
-    voice_audio?: string | null
+    voice_audio?: string | null,
+    project_id?: number | null
   ): Promise<void> => {
     try {
       setCreateLoading(true);
@@ -122,7 +123,8 @@ export const CaptureCreateModal = ({
         sketch_image,
         voice_audio,
         graph_x,
-        graph_y
+        graph_y,
+        project_id
       );
 
       onClose();

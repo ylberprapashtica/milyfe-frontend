@@ -1,0 +1,72 @@
+.project-autocomplete {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: -25px;
+  z-index: 1000;
+  min-width: 200px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: rgba(#ffffff, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(#ffffff, 0.6);
+  border-radius: 12px;
+  box-shadow:
+    0 8px 32px 0 rgba(#805A8A, 0.25),
+    inset 0 1px 0 0 rgba(#ffffff, 0.8);
+  padding: 6px 0;
+  box-sizing: border-box;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(#805A8A, 0.1);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(#805A8A, 0.3);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(#805A8A, 0.5);
+    }
+  }
+}
+
+.project-autocomplete-item {
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
+  color: rgba(#2D2F66, 0.9);
+
+  &:hover,
+  &--selected {
+    background: rgba(#805A8A, 0.1);
+  }
+
+  &--selected {
+    background: rgba(#805A8A, 0.15);
+  }
+
+  &--create {
+    color: rgba(#805A8A, 0.9);
+    font-style: italic;
+  }
+
+  &:focus {
+    outline: none;
+    background: rgba(#805A8A, 0.2);
+  }
+}

@@ -4,8 +4,11 @@ import { Textarea } from '@/common/components/ui/Textarea';
 import { Select } from '@/common/components/ui/Select';
 import { Autocomplete } from '@/common/components/ui/Autocomplete';
 import { TagsAutocomplete } from '@/features/captures/components/TagsAutocomplete';
+import { ProjectAutocomplete, type ProjectSuggestion } from '@/features/projects/components/ProjectAutocomplete';
 import { useCaptureAutocomplete } from '@/features/captures/hooks/useCaptureAutocomplete';
 import { capturesService } from '@/features/captures/services/captures.service';
+import { projectsService } from '@/features/projects/services/projects.service';
+import type { Project } from '@/features/projects/types';
 import { Capture, CaptureStatus, CaptureType } from '@/features/captures/types';
 import { SketchCanvas } from '@/features/captures/components/SketchCanvas';
 import type { SketchCanvasRef } from '@/features/captures/components/SketchCanvas';
@@ -17,7 +20,7 @@ import './CaptureInput.scss';
  */
 export interface CaptureInputProps {
   /** Callback function when a capture is submitted */
-  onSubmit: (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null, voice_audio?: string | null) => Promise<void>;
+  onSubmit: (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null, voice_audio?: string | null, project_id?: number | null) => Promise<void>;
   /** Whether the input should be disabled */
   disabled?: boolean;
   /** Placeholder text for the content textarea */
@@ -32,6 +35,8 @@ export interface CaptureInputProps {
   initialCaptureTypeId?: number | null;
   /** Initial capture status ID (for editing existing captures) */
   initialCaptureStatusId?: number | null;
+  /** Initial project ID (for editing existing captures) */
+  initialProjectId?: number | null;
   /** Text to display on the submit button */
   submitButtonText?: string;
   /** Whether to hide the submit button (for external button placement) */
@@ -78,6 +83,7 @@ export const CaptureInput = ({
   initialTags,
   initialCaptureTypeId,
   initialCaptureStatusId,
+  initialProjectId,
   submitButtonText = 'Create Note',
   hideSubmitButton = false,
   onSubmitHandlerReady,
@@ -95,10 +101,19 @@ export const CaptureInput = ({
   const [showVoiceSection, setShowVoiceSection] = useState<boolean>(false);
   const [captureTypeId, setCaptureTypeId] = useState<string>(initialCaptureTypeId?.toString() || '');
   const [captureStatusId, setCaptureStatusId] = useState<string>(initialCaptureStatusId?.toString() || '');
+  const [projectId, setProjectId] = useState<string>(initialProjectId?.toString() || '');
+  const [projectInputValue, setProjectInputValue] = useState<string>('');
   const [captureTypes, setCaptureTypes] = useState<CaptureType[]>([]);
   const [captureStatuses, setCaptureStatuses] = useState<CaptureStatus[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loadingTypes, setLoadingTypes] = useState<boolean>(false);
   const [loadingStatuses, setLoadingStatuses] = useState<boolean>(false);
+  const [loadingProjects, setLoadingProjects] = useState<boolean>(false);
+  const [projectSuggestions, setProjectSuggestions] = useState<ProjectSuggestion[]>([]);
+  const [projectSuggestionsVisible, setProjectSuggestionsVisible] = useState<boolean>(false);
+  const [projectSelectedIndex, setProjectSelectedIndex] = useState<number>(0);
+  const [pendingNewProject, setPendingNewProject] = useState<{ name: string } | null>(null);
+  const [projectDescription, setProjectDescription] = useState<string>('');
   const [allTags, setAllTags] = useState<string[]>([]);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [tagSuggestionsVisible, setTagSuggestionsVisible] = useState<boolean>(false);
@@ -106,6 +121,7 @@ export const CaptureInput = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const sketchCanvasRef = useRef<SketchCanvasRef>(null);
   const tagsWrapperRef = useRef<HTMLDivElement | null>(null);
+  const projectWrapperRef = useRef<HTMLDivElement | null>(null);
 
   // Load capture types, statuses, and tags on mount
   useEffect(() => {
@@ -154,6 +170,32 @@ export const CaptureInput = ({
     loadTags();
   }, [initialCaptureStatusId]);
 
+  useEffect(() => {
+    const loadProjects = async (): Promise<void> => {
+      try {
+        setLoadingProjects(true);
+        const projectList = await projectsService.getProjects();
+        setProjects(projectList);
+      } catch (err) {
+        console.error('Error loading projects:', err);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
+    loadProjects();
+  }, []);
+
+  // Sync projectInputValue when projects load and we have projectId
+  useEffect(() => {
+    if (projectId && projects.length > 0) {
+      const proj = projects.find((p) => p.id.toString() === projectId);
+      if (proj) {
+        setProjectInputValue(proj.name);
+      }
+    }
+  }, [projects, projectId]);
+
   // Track the capture ID to reset form when editing a different capture
   const [lastCaptureId, setLastCaptureId] = useState<number | undefined>(captureId);
   
@@ -178,6 +220,10 @@ export const CaptureInput = ({
       if (initialCaptureStatusId !== undefined) {
         setCaptureStatusId(initialCaptureStatusId?.toString() || '');
       }
+      if (initialProjectId !== undefined) {
+        setProjectId(initialProjectId?.toString() || '');
+        setProjectInputValue(''); // Will be synced when projects load
+      }
       if (initialSketchImage !== undefined) {
         setSketchImage(initialSketchImage || null);
       }
@@ -190,7 +236,7 @@ export const CaptureInput = ({
         setLastCaptureId(captureId);
       }
     }
-  }, [initialTitle, initialContent, initialTags, initialCaptureTypeId, initialCaptureStatusId, initialSketchImage, initialVoiceAudio, captureId, lastCaptureId]);
+  }, [initialTitle, initialContent, initialTags, initialCaptureTypeId, initialCaptureStatusId, initialProjectId, initialSketchImage, initialVoiceAudio, captureId, lastCaptureId]);
   
   // Autocomplete hook
   const {
@@ -329,6 +375,20 @@ export const CaptureInput = ({
   }, [tagSuggestionsVisible]);
 
   /**
+   * Close project suggestions when clicking outside
+   */
+  useEffect(() => {
+    if (!projectSuggestionsVisible) return;
+    const handleClickOutside = (e: MouseEvent): void => {
+      if (projectWrapperRef.current && !projectWrapperRef.current.contains(e.target as Node)) {
+        setProjectSuggestionsVisible(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [projectSuggestionsVisible]);
+
+  /**
    * Handle capture type select change
    */
   const handleTypeChange = (e: ChangeEvent<HTMLSelectElement>): void => {
@@ -340,6 +400,91 @@ export const CaptureInput = ({
    */
   const handleStatusChange = (e: ChangeEvent<HTMLSelectElement>): void => {
     setCaptureStatusId(e.target.value);
+  };
+
+  /**
+   * Handle project input change (typing in autocomplete)
+   */
+  const handleProjectInputChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    const value = e.target.value;
+    setProjectInputValue(value);
+    setProjectId(''); // User is typing, clear selection
+    setPendingNewProject(null); // User is changing, clear pending create
+    const query = value.trim().toLowerCase();
+    if (query.length > 0) {
+      const filtered = projects.filter((p) => p.name.toLowerCase().includes(query));
+      const exactMatch = filtered.some((p) => p.name.toLowerCase() === query);
+      const createOption: ProjectSuggestion[] = !exactMatch ? [{ name: value.trim(), isCreate: true }] : [];
+      setProjectSuggestions([...filtered, ...createOption]);
+      setProjectSuggestionsVisible(filtered.length > 0 || createOption.length > 0);
+      setProjectSelectedIndex(0);
+    } else {
+      const noProjectOption: ProjectSuggestion = { name: 'No project', isNoProject: true };
+      setProjectSuggestions([noProjectOption, ...projects]);
+      setProjectSuggestionsVisible(true);
+      setProjectSelectedIndex(0);
+    }
+  };
+
+  /**
+   * Handle project input focus - show all projects when focused with empty input
+   */
+  const handleProjectFocus = (): void => {
+    if (projectInputValue.trim().length === 0) {
+      const noProjectOption: ProjectSuggestion = { name: 'No project', isNoProject: true };
+      setProjectSuggestions([noProjectOption, ...projects]);
+      setProjectSuggestionsVisible(true);
+      setProjectSelectedIndex(0);
+    }
+  };
+
+  /**
+   * Handle project suggestion select
+   */
+  const handleProjectSelect = async (suggestion: ProjectSuggestion): Promise<void> => {
+    if ('isCreate' in suggestion && suggestion.isCreate) {
+      setPendingNewProject({ name: suggestion.name });
+      setProjectInputValue(suggestion.name);
+      setProjectDescription('');
+    } else if ('isNoProject' in suggestion && suggestion.isNoProject) {
+      setProjectId('');
+      setProjectInputValue('');
+      setPendingNewProject(null);
+      setProjectDescription('');
+    } else if ('id' in suggestion) {
+      setProjectId(suggestion.id.toString());
+      setProjectInputValue(suggestion.name);
+      setPendingNewProject(null);
+      setProjectDescription('');
+    }
+    setProjectSuggestionsVisible(false);
+  };
+
+  /**
+   * Handle project input keydown (ArrowUp, ArrowDown, Enter, Escape)
+   */
+  const handleProjectKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (!projectSuggestionsVisible || projectSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setProjectSelectedIndex((prev) => (prev + 1) % projectSuggestions.length);
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setProjectSelectedIndex((prev) => (prev - 1 + projectSuggestions.length) % projectSuggestions.length);
+      return;
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleProjectSelect(projectSuggestions[projectSelectedIndex]);
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setProjectSuggestionsVisible(false);
+    }
   };
 
   /**
@@ -366,6 +511,23 @@ export const CaptureInput = ({
 
       const typeId = captureTypeId ? parseInt(captureTypeId, 10) : null;
       const statusId = captureStatusId ? parseInt(captureStatusId, 10) : null;
+      let projId: number | null = projectId ? parseInt(projectId, 10) : null;
+
+      // If user selected to create a new project, create it first
+      if (pendingNewProject) {
+        try {
+          const created = await projectsService.createProject(pendingNewProject.name, projectDescription.trim() || null);
+          projId = created.id;
+          setProjects((prev) => [...prev, created]);
+          setProjectId(created.id.toString());
+          setPendingNewProject(null);
+          setProjectDescription('');
+        } catch (err) {
+          console.error('Error creating project:', err);
+          return;
+        }
+      }
+
       await onSubmit(
         content.trim(),
         title.trim() || undefined,
@@ -373,7 +535,8 @@ export const CaptureInput = ({
         typeId,
         statusId,
         sketchToSubmit || undefined,
-        voiceAudio || undefined
+        voiceAudio || undefined,
+        projId
       );
       
       // Reset form only if not editing (no initial values)
@@ -387,6 +550,10 @@ export const CaptureInput = ({
         // Reset to default 'fleeting' status
         const fleetingStatus = captureStatuses.find(s => s.name === 'fleeting');
         setCaptureStatusId(fleetingStatus?.id.toString() || '');
+        setProjectId('');
+        setProjectInputValue('');
+        setPendingNewProject(null);
+        setProjectDescription('');
       }
     } catch (err) {
       // Error handling is done by the parent component
@@ -449,7 +616,7 @@ export const CaptureInput = ({
       onSubmitHandlerReady(handleSubmit);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onSubmitHandlerReady, content, title, tags, captureTypeId, captureStatusId, sketchImage, voiceAudio, showSketchSection, showVoiceSection, disabled]);
+  }, [onSubmitHandlerReady, content, title, tags, captureTypeId, captureStatusId, projectId, sketchImage, voiceAudio, showSketchSection, showVoiceSection, disabled]);
 
   // Notify parent of form validity changes
   useEffect(() => {
@@ -591,6 +758,38 @@ export const CaptureInput = ({
           })),
         ]}
       />
+
+        <div ref={projectWrapperRef} className="capture-input-project-wrapper">
+          <Input
+            id="capture-project"
+            label="Project (optional)"
+            type="text"
+            placeholder="Type to search or create a project..."
+            value={projectInputValue}
+            onChange={handleProjectInputChange}
+            onFocus={handleProjectFocus}
+            onKeyDown={handleProjectKeyDown}
+            disabled={disabled || loadingProjects}
+          />
+          <ProjectAutocomplete
+            suggestions={projectSuggestions}
+            selectedIndex={projectSelectedIndex}
+            onSelect={handleProjectSelect}
+            onClose={() => setProjectSuggestionsVisible(false)}
+            visible={projectSuggestionsVisible}
+          />
+          {pendingNewProject && (
+            <Textarea
+              id="capture-project-description"
+              label="Project description (optional)"
+              placeholder="Describe this project..."
+              value={projectDescription}
+              onChange={(e) => setProjectDescription(e.target.value)}
+              disabled={disabled}
+              rows={3}
+            />
+          )}
+        </div>
       
         <Input
           id="capture-title"

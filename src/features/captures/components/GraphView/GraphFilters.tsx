@@ -1,4 +1,6 @@
-import { useState, ReactElement } from 'react';
+import { useState, useEffect, ReactElement } from 'react';
+import { projectsService } from '@/features/projects/services/projects.service';
+import type { Project } from '@/features/projects/types';
 import './GraphFilters.scss';
 
 /**
@@ -33,10 +35,16 @@ export interface GraphFiltersProps {
   selectedStatuses: string[];
   /** Selected type filters */
   selectedTypes: string[];
+  /** Whether project view is enabled */
+  projectView?: boolean;
   /** Callback when status filters change */
   onStatusChange: (statuses: string[]) => void;
   /** Callback when type filters change */
   onTypeChange: (types: string[]) => void;
+  /** Selected project filters (project ID strings; use "none" for unassigned) */
+  selectedProjects?: string[];
+  /** Callback when project filters change */
+  onProjectChange?: (projects: string[]) => void;
   /** Callback to clear all filters */
   onClearFilters: () => void;
 }
@@ -50,11 +58,26 @@ export interface GraphFiltersProps {
 export const GraphFilters = ({
   selectedStatuses,
   selectedTypes,
+  selectedProjects = [],
   onStatusChange,
   onTypeChange,
+  onProjectChange,
   onClearFilters,
 }: GraphFiltersProps): ReactElement => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    const load = async (): Promise<void> => {
+      try {
+        const list = await projectsService.getProjects();
+        setProjects(list);
+      } catch (err) {
+        console.error('Error loading projects for filters:', err);
+      }
+    };
+    load();
+  }, []);
 
   /**
    * Handle status checkbox change
@@ -78,7 +101,20 @@ export const GraphFilters = ({
     }
   };
 
-  const hasActiveFilters = selectedStatuses.length > 0 || selectedTypes.length > 0;
+  /**
+   * Handle project checkbox change
+   */
+  const handleProjectChange = (value: string, checked: boolean): void => {
+    if (!onProjectChange) return;
+    if (checked) {
+      onProjectChange([...selectedProjects, value]);
+    } else {
+      onProjectChange(selectedProjects.filter((p) => p !== value));
+    }
+  };
+
+  const hasActiveFilters =
+    selectedStatuses.length > 0 || selectedTypes.length > 0 || selectedProjects.length > 0;
 
   return (
     <div className="graph-filters">
@@ -92,7 +128,7 @@ export const GraphFilters = ({
         <span className="graph-filters-toggle-text">Filters</span>
         {hasActiveFilters && (
           <span className="graph-filters-badge" aria-label="Active filters">
-            {selectedStatuses.length + selectedTypes.length}
+            {selectedStatuses.length + selectedTypes.length + selectedProjects.length}
           </span>
         )}
       </button>
@@ -139,6 +175,34 @@ export const GraphFilters = ({
               ))}
             </div>
           </div>
+
+          {onProjectChange && (
+            <div className="graph-filters-section">
+              <h3 className="graph-filters-section-title">Project</h3>
+              <div className="graph-filters-options">
+                <label key="none" className="graph-filters-option">
+                  <input
+                    type="checkbox"
+                    checked={selectedProjects.includes('none')}
+                    onChange={(e) => handleProjectChange('none', e.target.checked)}
+                    className="graph-filters-checkbox"
+                  />
+                  <span className="graph-filters-label">No project</span>
+                </label>
+                {projects.map((project) => (
+                  <label key={project.id} className="graph-filters-option">
+                    <input
+                      type="checkbox"
+                      checked={selectedProjects.includes(String(project.id))}
+                      onChange={(e) => handleProjectChange(String(project.id), e.target.checked)}
+                      className="graph-filters-checkbox"
+                    />
+                    <span className="graph-filters-label">{project.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {hasActiveFilters && (
             <button

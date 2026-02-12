@@ -6,6 +6,7 @@ import {
   Background,
   Controls,
   MiniMap,
+  Panel,
   useNodesState,
   useEdgesState,
   ConnectionMode,
@@ -18,6 +19,7 @@ import '@xyflow/react/dist/style.css';
 import { capturesService } from '@/features/captures/services/captures.service';
 import { GraphData } from '@/features/captures/types';
 import { CaptureNode, CaptureNodeData } from './CaptureNode';
+import { ProjectNode } from './ProjectNode';
 import FloatingEdge from './FloatingEdge';
 import CustomConnectionLine from './CustomConnectionLine';
 import { ConfirmModal } from '@/common/components/ui';
@@ -50,6 +52,12 @@ export interface GraphViewProps {
   onNodeClick?: (captureId: number) => void;
   /** When this value changes, graph data is refetched (e.g. after modal update) */
   refreshTrigger?: number;
+  /** Whether to show project view (group nodes by project) */
+  projectView?: boolean;
+  /** Callback when project view toggle changes */
+  onProjectViewChange?: (enabled: boolean) => void;
+  /** Optional filter by project IDs (string IDs; use "none" for unassigned) */
+  projectFilter?: string[];
 }
 
 /**
@@ -71,6 +79,7 @@ const CaptureNodeWithContext = (props: { id: string; data: CaptureNodeData }) =>
 
 const nodeTypes = {
   note: CaptureNodeWithContext,
+  project: ProjectNode,
 } as const;
 
 const edgeTypes = {
@@ -96,6 +105,30 @@ const connectionLineStyle = {
   strokeWidth: 2,
 } as const;
 
+const PROJECT_LAYOUTS_KEY = 'milyfe_project_layouts';
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 180;
+const GRID_PADDING = 24;
+const GRID_COLS = 3;
+const GRID_GAP = 40;
+
+type ProjectLayout = { x: number; y: number; width: number; height: number };
+
+function getProjectLayouts(): Record<string, ProjectLayout> {
+  try {
+    const stored = localStorage.getItem(PROJECT_LAYOUTS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveProjectLayout(projectId: string | number, layout: ProjectLayout): void {
+  const layouts = getProjectLayouts();
+  layouts[String(projectId)] = layout;
+  localStorage.setItem(PROJECT_LAYOUTS_KEY, JSON.stringify(layouts));
+}
+
 /**
  * Graph view component for visualizing note connections
  * 
@@ -110,6 +143,11 @@ const connectionLineStyle = {
  * <GraphView tagFilter={['tag1', 'tag2']} />
  * ```
  */
+/** Data type for all graph nodes (capture notes or project containers) */
+type GraphNodeData = (CaptureNodeData | { label: string; projectId: number | string }) & Record<string, unknown>;
+
+type GraphNode = Node<GraphNodeData>;
+
 export const GraphView = ({
   tagFilter,
   statusFilter,
@@ -117,16 +155,19 @@ export const GraphView = ({
   onTitleClick,
   onNodeClick,
   refreshTrigger,
+  projectView = false,
+  onProjectViewChange,
+  projectFilter,
 }: GraphViewProps): ReactElement => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<CaptureNodeData>>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<GraphNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge<EdgeData>>([]);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [edgeToDelete, setEdgeToDelete] = useState<Edge<EdgeData> | null>(null);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [createPosition, setCreatePosition] = useState<{ x: number; y: number } | null>(null);
-  const reactFlowInstanceRef = useRef<ReactFlowInstance<Node<CaptureNodeData>, Edge<EdgeData>> | null>(null);
+  const reactFlowInstanceRef = useRef<ReactFlowInstance<GraphNode, Edge<EdgeData>> | null>(null);
 
   /**
    * Handle clicking on an edge to request deletion
@@ -174,7 +215,7 @@ export const GraphView = ({
   /**
    * Store React Flow instance on init (for screenToFlowPosition)
    */
-  const onInit = useCallback((instance: ReactFlowInstance<Node<CaptureNodeData>, Edge<EdgeData>>) => {
+  const onInit = useCallback((instance: ReactFlowInstance<GraphNode, Edge<EdgeData>>) => {
     reactFlowInstanceRef.current = instance;
   }, []);
 
@@ -199,23 +240,64 @@ export const GraphView = ({
   }, []);
 
   /**
-   * Handle node drag stop to save position
+   * Handle node drag stop to save position (flat or project view)
    */
-  const onNodeDragStop = useCallback(async (_event: React.MouseEvent, node: Node<CaptureNodeData>) => {
-    const captureId = node.data?.captureId;
-    if (captureId && node.position) {
-      try {
+  const onNodeDragStop = useCallback(async (_event: React.MouseEvent, node: GraphNode) => {
+    if (node.type === 'project') return;
+    const captureId = node.data && 'captureId' in node.data ? node.data.captureId : undefined;
+    if (typeof captureId !== 'number' || !node.position) return;
+
+    try {
+      if (projectView && node.parentId) {
+        await capturesService.updateCaptureProjectPosition(
+          captureId,
+          node.position.x,
+          node.position.y
+        );
+      } else {
         await capturesService.updateCapturePosition(
           captureId,
           node.position.x,
           node.position.y
         );
-      } catch (err) {
-        console.error('Error saving node position:', err);
-        // Don't show error to user as it's a background operation
       }
+    } catch (err) {
+      console.error('Error saving node position:', err);
     }
-  }, []);
+  }, [projectView]);
+
+  /**
+   * Handle nodes change: wrap to persist project resize/position to localStorage
+   */
+  const handleNodesChange = useCallback(
+    (changes: Parameters<typeof onNodesChange>[0]) => {
+      onNodesChange(changes);
+      for (const ch of changes) {
+        if (!('id' in ch) || !ch.id) continue;
+        const node = nodes.find((n) => n.id === ch.id);
+        if (node?.type !== 'project' || !node.data) continue;
+
+        const projId = (node.data as { projectId?: string }).projectId;
+        if (!projId) continue;
+
+        let layout: ProjectLayout | null = null;
+        if (ch.type === 'dimensions' && ch.dimensions) {
+          layout = {
+            x: node.position.x,
+            y: node.position.y,
+            width: ch.dimensions.width ?? (node.style?.width as number) ?? 300,
+            height: ch.dimensions.height ?? (node.style?.height as number) ?? 200,
+          };
+        } else if (ch.type === 'position' && ch.position) {
+          const w = (node.style?.width as number) ?? 300;
+          const h = (node.style?.height as number) ?? 200;
+          layout = { x: ch.position.x, y: ch.position.y, width: w, height: h };
+        }
+        if (layout) saveProjectLayout(projId, layout);
+      }
+    },
+    [onNodesChange, nodes]
+  );
 
   /**
    * Handle creating a new connection between nodes
@@ -230,10 +312,10 @@ export const GraphView = ({
       return;
     }
 
-    const sourceCaptureId = sourceNode.data?.captureId;
-    const targetCaptureId = targetNode.data?.captureId;
+    const sourceCaptureId = sourceNode.data && 'captureId' in sourceNode.data ? sourceNode.data.captureId : undefined;
+    const targetCaptureId = targetNode.data && 'captureId' in targetNode.data ? targetNode.data.captureId : undefined;
 
-    if (!sourceCaptureId || !targetCaptureId) {
+    if (typeof sourceCaptureId !== 'number' || typeof targetCaptureId !== 'number') {
       console.error('Source or target capture ID not found');
       return;
     }
@@ -292,7 +374,7 @@ export const GraphView = ({
       const graphData: GraphData = await capturesService.getGraphData();
       
       // Convert API data to React Flow format
-      const flowNodes: Node<CaptureNodeData>[] = graphData.nodes.map((node) => ({
+      const flowNodes: GraphNode[] = graphData.nodes.map((node) => ({
         id: node.id,
         type: 'note' as const,
         position: node.position,
@@ -331,7 +413,7 @@ export const GraphView = ({
       // Apply filters (tag, status, type)
       // For status and type filters, we keep all nodes but mark filtered ones
       // For tag filter, we remove nodes (existing behavior)
-      let filteredNodes: Node<CaptureNodeData>[] = flowNodes;
+      let filteredNodes: GraphNode[] = flowNodes;
       let filteredEdges: Edge<EdgeData>[] = flowEdges;
 
       // Apply tag filter if provided (removes nodes)
@@ -359,8 +441,8 @@ export const GraphView = ({
 
       if (hasStatusFilter || hasTypeFilter) {
         filteredNodes = filteredNodes.map((node) => {
-          const nodeStatus = node.data?.status || '';
-          const nodeType = node.data?.type || '';
+          const nodeStatus = String(node.data?.status ?? '');
+          const nodeType = String(node.data?.type ?? '');
           
           // Check if node matches filters
           const matchesStatus = !hasStatusFilter || (nodeStatus && statusFilter!.includes(nodeStatus));
@@ -407,15 +489,144 @@ export const GraphView = ({
         });
       }
 
-      setNodes(filteredNodes);
-      setEdges(filteredEdges);
+      // Apply project filter (mark nodes as filtered, keep all nodes)
+      const hasProjectFilter = projectFilter && projectFilter.length > 0;
+      if (hasProjectFilter) {
+        filteredNodes = filteredNodes.map((node) => {
+          const pid = (node.data as { project_id?: number | null })?.project_id ?? null;
+          const projectKeyStr = pid === null ? 'none' : String(pid);
+          const matchesProject = projectFilter!.includes(projectKeyStr);
+          const isFilteredByProject = !matchesProject;
+          const wasFiltered = (node.data as { filtered?: boolean })?.filtered ?? false;
+          const isFiltered = wasFiltered || isFilteredByProject;
+          return {
+            ...node,
+            draggable: node.draggable !== false && !isFiltered,
+            data: { ...node.data, filtered: isFiltered },
+          };
+        });
+        const filteredNodeIds = new Set(
+          filteredNodes.filter((node) => node.data?.filtered).map((node) => node.id)
+        );
+        filteredEdges = filteredEdges.map((edge) => {
+          const isFiltered = filteredNodeIds.has(edge.source) || filteredNodeIds.has(edge.target);
+          return {
+            ...edge,
+            data: { ...edge.data, filtered: isFiltered },
+            style: isFiltered
+              ? { ...defaultEdgeOptions.style, ...edge.style, opacity: 0.1, stroke: '#ffffff' }
+              : { ...defaultEdgeOptions.style, ...edge.style },
+          };
+        });
+      }
+
+      // Transform to project view if enabled
+      let finalNodes = filteredNodes;
+      let finalEdges = filteredEdges;
+
+      if (projectView) {
+        const projectLayouts = getProjectLayouts();
+        const projectKey = (id: number | null) => (id === null ? 'none' : String(id));
+
+        // Group nodes by project_id
+        const byProject = new Map<string, GraphNode[]>();
+        for (const node of filteredNodes) {
+          const pid = (node.data as { project_id?: number | null })?.project_id ?? null;
+          const key = projectKey(pid);
+          if (!byProject.has(key)) byProject.set(key, []);
+          byProject.get(key)!.push(node);
+        }
+
+        // Nodes without a project stay free-flowing (top-level, no container)
+        const noProjectNodes: GraphNode[] = (byProject.get('none') ?? []).map((n) => ({
+          ...n,
+          type: 'note' as const,
+          parentId: undefined,
+          extent: undefined,
+          position: n.position,
+          data: n.data,
+        }));
+
+        const projectNodes: GraphNode[] = [];
+        const childNodes: GraphNode[] = [];
+        let col = 0;
+        let row = 0;
+        let maxY = 0;
+
+        // Only create project containers for actual projects (skip 'none')
+        for (const [projKey, childList] of byProject.entries()) {
+          if (projKey === 'none') continue;
+
+          const projectName = (childList[0]?.data as { project?: { name: string } })?.project?.name ?? `Project ${projKey}`;
+
+          // Compute bounds from children
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxYChild = -Infinity;
+          for (const n of childList) {
+            const pos = n.position;
+            minX = Math.min(minX, pos.x);
+            minY = Math.min(minY, pos.y);
+            maxX = Math.max(maxX, pos.x + NODE_WIDTH);
+            maxYChild = Math.max(maxYChild, pos.y + NODE_HEIGHT);
+          }
+          if (minX === Infinity) minX = 0;
+          if (minY === Infinity) minY = 0;
+          if (maxX === -Infinity) maxX = NODE_WIDTH;
+          if (maxYChild === -Infinity) maxYChild = NODE_HEIGHT;
+
+          const saved = projectLayouts[projKey];
+          const width = saved?.width ?? Math.max(maxX - minX + GRID_PADDING * 2, 250);
+          const height = saved?.height ?? Math.max(maxYChild - minY + GRID_PADDING * 2, 200);
+
+          const projNodeId = `project-${projKey}`;
+          const projectX = saved?.x ?? col * (width + GRID_GAP);
+          const projectY = saved?.y ?? row * (height + GRID_GAP);
+
+          projectNodes.push({
+            id: projNodeId,
+            type: 'project',
+            position: { x: projectX, y: projectY },
+            data: { label: projectName, projectId: projKey },
+            style: { width, height },
+            draggable: true,
+          });
+
+          for (const n of childList) {
+            const data = n.data as CaptureNodeData & { project_x?: number | null; project_y?: number | null };
+            const relX = data.project_x != null ? data.project_x : n.position.x - minX + GRID_PADDING;
+            const relY = data.project_y != null ? data.project_y : n.position.y - minY + GRID_PADDING;
+
+            childNodes.push({
+              ...n,
+              id: n.id,
+              type: 'note',
+              parentId: projNodeId,
+              extent: 'parent' as const,
+              position: { x: relX, y: relY },
+              data: n.data,
+            });
+          }
+
+          col++;
+          if (col >= GRID_COLS) {
+            col = 0;
+            row++;
+          }
+          maxY = Math.max(maxY, projectY + height);
+        }
+
+        finalNodes = [...projectNodes, ...childNodes, ...noProjectNodes];
+        // Edges stay the same (connect by node id)
+      }
+
+      setNodes(finalNodes);
+      setEdges(finalEdges);
     } catch (err) {
       setError('Failed to load graph data. Please try again.');
       console.error('Error loading graph data:', err);
     } finally {
       setLoading(false);
     }
-  }, [tagFilter, statusFilter, typeFilter, setNodes, setEdges]);
+  }, [tagFilter, statusFilter, typeFilter, projectFilter, projectView, setNodes, setEdges]);
 
   /**
    * Handle successful capture creation - reload graph to show new node
@@ -456,7 +667,7 @@ export const GraphView = ({
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={projectView ? handleNodesChange : onNodesChange}
           onEdgesChange={onEdgesChange}
           onNodeDragStop={onNodeDragStop}
           onConnect={onConnect}
@@ -478,7 +689,21 @@ export const GraphView = ({
           fitView
         >
           <Background />
-          <Controls />
+          <Panel position="bottom-left">
+            {onProjectViewChange && (
+              <button
+                type="button"
+                className={`graph-view-panel__project-btn ${projectView ? 'graph-view-panel__project-btn--active' : ''}`}
+                onClick={() => onProjectViewChange(!projectView)}
+                aria-pressed={projectView}
+                aria-label={projectView ? 'Disable project view' : 'Enable project view'}
+                title={projectView ? 'Project view on' : 'Project view off'}
+              >
+                {projectView ? '📂' : '📁'}
+              </button>
+            )}
+            <Controls />
+          </Panel>
           <MiniMap />
         </ReactFlow>
         <ConfirmModal

@@ -35,6 +35,8 @@ export const CapturesPage = (): ReactElement => {
   const [filteredCaptures, setFilteredCaptures] = useState<Capture[]>(captures);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [projectFilter, setProjectFilter] = useState<string[]>([]);
+  const [projectView, setProjectView] = useState<boolean>(true);
   
   // Initialize sidebar state based on screen size (collapsed by default on mobile)
   const getInitialSidebarState = (): boolean => {
@@ -182,6 +184,7 @@ export const CapturesPage = (): ReactElement => {
   const handleClearFilters = (): void => {
     setStatusFilter([]);
     setTypeFilter([]);
+    setProjectFilter([]);
   };
 
   const lastSidebarWidthRef = useRef<number>(sidebarWidth);
@@ -298,8 +301,10 @@ export const CapturesPage = (): ReactElement => {
           <GraphFilters
             selectedStatuses={statusFilter}
             selectedTypes={typeFilter}
+            selectedProjects={projectFilter}
             onStatusChange={setStatusFilter}
             onTypeChange={setTypeFilter}
+            onProjectChange={setProjectFilter}
             onClearFilters={handleClearFilters}
           />
           <Button
@@ -344,6 +349,9 @@ export const CapturesPage = (): ReactElement => {
           <GraphView
             statusFilter={statusFilter}
             typeFilter={typeFilter}
+            projectFilter={projectFilter}
+            projectView={projectView}
+            onProjectViewChange={setProjectView}
             onTitleClick={handleOpenCapture}
             onNodeClick={handleNodeClick}
             refreshTrigger={refreshTrigger}

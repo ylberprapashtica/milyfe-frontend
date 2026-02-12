@@ -6,6 +6,31 @@
   background: transparent;
 }
 
+.graph-view-panel__project-btn {
+  position: absolute;
+  z-index: 5;
+  margin: 15px;
+  bottom: 103px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  color: rgba(45, 47, 102, 0.9);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  &--active {
+    background: rgba(128, 90, 138, 0.15);
+    color: rgba(45, 47, 102, 1);
+  }
+}
+
 .graph-view-loading,
 .graph-view-error {
   display: flex;

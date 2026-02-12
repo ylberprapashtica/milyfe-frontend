@@ -144,12 +144,16 @@ export const capturesService = {
     sketch_image?: string | null,
     voice_audio?: string | null,
     graph_x?: number,
-    graph_y?: number
+    graph_y?: number,
+    project_id?: number | null
   ): Promise<Capture> => {
     const body: Record<string, unknown> = { content, title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio };
     if (graph_x !== undefined && graph_y !== undefined) {
       body.graph_x = graph_x;
       body.graph_y = graph_y;
+    }
+    if (project_id !== undefined) {
+      body.project_id = project_id;
     }
     const response = await apiClient.post<Capture>('/captures', body);
     return response.data;
@@ -177,8 +181,8 @@ export const capturesService = {
    * console.log(`Updated at: ${updated.updated_at}`);
    * ```
    */
-  updateCapture: async (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null, voice_audio?: string | null): Promise<Capture> => {
-    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio });
+  updateCapture: async (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null, voice_audio?: string | null, project_id?: number | null): Promise<Capture> => {
+    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio, project_id });
     return response.data;
   },
 
@@ -202,7 +206,7 @@ export const capturesService = {
   updateCaptureStatus: async (id: number, capture_status_id: number): Promise<Capture> => {
     // First get the current capture to preserve other fields
     const current = await capturesService.getCapture(id);
-    return capturesService.updateCapture(id, current.content, current.title, current.tags, current.capture_type_id, capture_status_id, current.sketch_image, current.voice_audio);
+    return capturesService.updateCapture(id, current.content, current.title, current.tags, current.capture_type_id, capture_status_id, current.sketch_image, current.voice_audio, current.project_id);
   },
 
   /**
@@ -305,6 +309,13 @@ export const capturesService = {
    */
   updateCapturePosition: async (id: number, x: number, y: number): Promise<void> => {
     await apiClient.put(`/captures/${id}/position`, { x, y });
+  },
+
+  /**
+   * Update the project position of a capture (for project view).
+   */
+  updateCaptureProjectPosition: async (id: number, x: number, y: number): Promise<void> => {
+    await apiClient.put(`/captures/${id}/project-position`, { x, y });
   },
 
   /**

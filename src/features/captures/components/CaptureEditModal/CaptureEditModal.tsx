@@ -149,7 +149,8 @@ export const CaptureEditModal = ({
     capture_type_id?: number | null,
     capture_status_id?: number | null,
     sketch_image?: string | null,
-    voice_audio?: string | null
+    voice_audio?: string | null,
+    project_id?: number | null
   ): Promise<void> => {
     if (!capture) return;
     
@@ -157,7 +158,7 @@ export const CaptureEditModal = ({
     isUpdatingRef.current = true;
     
     try {
-      await updateCapture(capture.id, content, title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio);
+      await updateCapture(capture.id, content, title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio, project_id);
       
       // Fetch the updated capture to get all the latest data
       if (captureId) {
@@ -261,6 +262,7 @@ export const CaptureEditModal = ({
                   initialTags={capture.tags?.join(', ') || ''}
                   initialCaptureTypeId={capture.capture_type_id || null}
                   initialCaptureStatusId={capture.capture_status_id || null}
+                  initialProjectId={capture.project_id || null}
                   initialSketchImage={capture.sketch_image || null}
                   initialVoiceAudio={capture.voice_audio || null}
                   captureId={capture.id}

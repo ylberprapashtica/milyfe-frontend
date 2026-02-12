@@ -68,6 +68,10 @@ export interface Capture {
   sketch_image?: string | null;
   /** Base64 data URL of attached voice audio (optional) */
   voice_audio?: string | null;
+  /** ID of the project (optional) */
+  project_id?: number | null;
+  /** Project relationship (optional, loaded with relationships) */
+  project?: { id: number; name: string; description?: string | null } | null;
   /** Notes that this note links to (optional, loaded with relationships; pivot.id is the note_link id for delete) */
   links_to?: (Capture & { pivot?: { id: number } })[];
   /** Notes that link to this note (optional, loaded with relationships; pivot.id is the note_link id for delete) */
@@ -91,6 +95,10 @@ export interface GraphData {
       statusColor?: string;
       type?: string;
       typeSymbol?: string;
+      project_id?: number | null;
+      project?: { id: number; name: string } | null;
+      project_x?: number | null;
+      project_y?: number | null;
     };
     position: {
       x: number;

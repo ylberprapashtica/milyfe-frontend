@@ -66,6 +66,8 @@ export interface Capture {
   updated_at: string;
   /** Base64 data URL of attached sketch image (optional) */
   sketch_image?: string | null;
+  /** Base64 data URL of attached voice audio (optional) */
+  voice_audio?: string | null;
   /** Notes that this note links to (optional, loaded with relationships) */
   links_to?: Capture[];
   /** Notes that link to this note (optional, loaded with relationships) */

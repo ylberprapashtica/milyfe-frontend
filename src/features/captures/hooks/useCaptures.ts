@@ -15,7 +15,7 @@ export interface UseCapturesReturn {
   /** Function to reload all captures from the API */
   reload: () => Promise<void>;
   /** Function to create a new capture */
-  createCapture: (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null, graph_x?: number, graph_y?: number) => Promise<void>;
+  createCapture: (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null, voice_audio?: string | null, graph_x?: number, graph_y?: number) => Promise<void>;
 }
 
 /**
@@ -71,6 +71,7 @@ export const useCaptures = (): UseCapturesReturn => {
     capture_type_id?: number | null,
     capture_status_id?: number | null,
     sketch_image?: string | null,
+    voice_audio?: string | null,
     graph_x?: number,
     graph_y?: number
   ): Promise<void> => {
@@ -81,7 +82,7 @@ export const useCaptures = (): UseCapturesReturn => {
     try {
       setLoading(true);
       setError(null);
-      await capturesService.createCapture(content.trim(), title, tags, capture_type_id, capture_status_id, sketch_image, graph_x, graph_y);
+      await capturesService.createCapture(content.trim(), title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio, graph_x, graph_y);
       await loadCaptures();
     } catch (err) {
       setError('Failed to save capture. Please try again.');

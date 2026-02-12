@@ -36,10 +36,11 @@ export const CreateNotePage = (): ReactElement => {
     tags?: string[],
     capture_type_id?: number | null,
     capture_status_id?: number | null,
-    sketch_image?: string | null
+    sketch_image?: string | null,
+    voice_audio?: string | null
   ): Promise<void> => {
     try {
-      await createCapture(content, title, tags, capture_type_id, capture_status_id, sketch_image);
+      await createCapture(content, title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio);
       
       // Check if AI generation will happen
       const aiWillGenerate = !title || !tags;

@@ -106,6 +106,11 @@ export const CaptureItem = ({
             />
           </div>
         )}
+        {capture.voice_audio && (
+          <div className="capture-item-voice">
+            <audio src={capture.voice_audio} controls className="capture-item-voice-audio" />
+          </div>
+        )}
       </div>
 
       {capture.tags && capture.tags.length > 0 && (

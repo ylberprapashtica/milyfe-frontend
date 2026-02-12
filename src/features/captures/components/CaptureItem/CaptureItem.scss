@@ -77,6 +77,16 @@ $black: #000000;
   border: 1px solid rgba($chinese-violet, 0.2);
 }
 
+.capture-item-voice {
+  margin-top: 8px;
+}
+
+.capture-item-voice-audio {
+  width: 100%;
+  max-width: 280px;
+  height: 36px;
+}
+
 .capture-item-tags {
   display: flex;
   flex-wrap: wrap;

@@ -8,6 +8,7 @@ import { capturesService } from '@/features/captures/services/captures.service';
 import { Capture, CaptureStatus, CaptureType } from '@/features/captures/types';
 import { SketchCanvas } from '@/features/captures/components/SketchCanvas';
 import type { SketchCanvasRef } from '@/features/captures/components/SketchCanvas';
+import { VoiceRecorder } from '@/features/captures/components/VoiceRecorder';
 import './CaptureInput.scss';
 
 /**
@@ -15,7 +16,7 @@ import './CaptureInput.scss';
  */
 export interface CaptureInputProps {
   /** Callback function when a capture is submitted */
-  onSubmit: (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null) => Promise<void>;
+  onSubmit: (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null, voice_audio?: string | null) => Promise<void>;
   /** Whether the input should be disabled */
   disabled?: boolean;
   /** Placeholder text for the content textarea */
@@ -42,6 +43,8 @@ export interface CaptureInputProps {
   captureId?: number;
   /** Initial sketch image (base64 data URL) for editing existing captures */
   initialSketchImage?: string | null;
+  /** Initial voice audio (base64 data URL) for editing existing captures */
+  initialVoiceAudio?: string | null;
 }
 
 /**
@@ -80,12 +83,15 @@ export const CaptureInput = ({
   onFormValidityChange,
   captureId,
   initialSketchImage,
+  initialVoiceAudio,
 }: CaptureInputProps): ReactElement => {
   const [title, setTitle] = useState<string>(initialTitle || '');
   const [content, setContent] = useState<string>(initialContent || '');
   const [tags, setTags] = useState<string>(initialTags || '');
   const [sketchImage, setSketchImage] = useState<string | null>(initialSketchImage || null);
+  const [voiceAudio, setVoiceAudio] = useState<string | null>(initialVoiceAudio || null);
   const [showSketchSection, setShowSketchSection] = useState<boolean>(false);
+  const [showVoiceSection, setShowVoiceSection] = useState<boolean>(false);
   const [captureTypeId, setCaptureTypeId] = useState<string>(initialCaptureTypeId?.toString() || '');
   const [captureStatusId, setCaptureStatusId] = useState<string>(initialCaptureStatusId?.toString() || '');
   const [captureTypes, setCaptureTypes] = useState<CaptureType[]>([]);
@@ -159,13 +165,16 @@ export const CaptureInput = ({
       if (initialSketchImage !== undefined) {
         setSketchImage(initialSketchImage || null);
       }
+      if (initialVoiceAudio !== undefined) {
+        setVoiceAudio(initialVoiceAudio || null);
+      }
       if (captureIdChanged) {
         setLastCaptureId(captureId);
       } else if (lastCaptureId === undefined) {
         setLastCaptureId(captureId);
       }
     }
-  }, [initialTitle, initialContent, initialTags, initialCaptureTypeId, initialCaptureStatusId, initialSketchImage, captureId, lastCaptureId]);
+  }, [initialTitle, initialContent, initialTags, initialCaptureTypeId, initialCaptureStatusId, initialSketchImage, initialVoiceAudio, captureId, lastCaptureId]);
   
   // Autocomplete hook
   const {
@@ -250,7 +259,8 @@ export const CaptureInput = ({
         tagsArray.length > 0 ? tagsArray : undefined,
         typeId,
         statusId,
-        sketchToSubmit || undefined
+        sketchToSubmit || undefined,
+        voiceAudio || undefined
       );
       
       // Reset form only if not editing (no initial values)
@@ -259,6 +269,7 @@ export const CaptureInput = ({
         setContent('');
         setTags('');
         setSketchImage(null);
+        setVoiceAudio(null);
         setCaptureTypeId('');
         // Reset to default 'fleeting' status
         const fleetingStatus = captureStatuses.find(s => s.name === 'fleeting');
@@ -325,7 +336,7 @@ export const CaptureInput = ({
       onSubmitHandlerReady(handleSubmit);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onSubmitHandlerReady, content, title, tags, captureTypeId, captureStatusId, sketchImage, showSketchSection, disabled]);
+  }, [onSubmitHandlerReady, content, title, tags, captureTypeId, captureStatusId, sketchImage, voiceAudio, showSketchSection, showVoiceSection, disabled]);
 
   // Notify parent of form validity changes
   useEffect(() => {
@@ -337,8 +348,8 @@ export const CaptureInput = ({
   return (
     <div className="capture-input-container">
       <div className="capture-input-field" style={{ position: 'relative' }}>
-        <div className={`capture-input-content-slot ${showSketchSection ? 'capture-input-content-slot--sketch' : ''}`}>
-          {!showSketchSection && (
+        <div className={`capture-input-content-slot ${showSketchSection ? 'capture-input-content-slot--sketch' : ''} ${showVoiceSection ? 'capture-input-content-slot--voice' : ''}`}>
+          {!showSketchSection && !showVoiceSection && (
             <>
               <Textarea
                 id="capture-content"
@@ -378,6 +389,25 @@ export const CaptureInput = ({
               />
             </div>
           )}
+          {showVoiceSection && (
+            <div className="capture-input-voice-panel">
+              <VoiceRecorder
+                initialVoiceAudio={voiceAudio}
+                onAccept={(base64DataUrl) => {
+                  setVoiceAudio(base64DataUrl);
+                  setShowVoiceSection(false);
+                }}
+                onDiscard={() => {
+                  setVoiceAudio(null);
+                  setShowVoiceSection(false);
+                }}
+                onTranscribeToContent={(transcript) => {
+                  setContent((prev) => (prev.trim() ? `${prev}\n\n${transcript}` : transcript));
+                }}
+                disabled={disabled}
+              />
+            </div>
+          )}
           <button
             type="button"
             className="capture-input-sketch-toggle"
@@ -388,6 +418,7 @@ export const CaptureInput = ({
                 setShowSketchSection(false);
               } else {
                 setShowSketchSection(true);
+                setShowVoiceSection(false);
               }
             }}
             disabled={disabled}
@@ -395,6 +426,24 @@ export const CaptureInput = ({
             {showSketchSection ? '← Back to text' : '+ Add sketch'}
             {sketchImage && !showSketchSection && (
               <span className="capture-input-sketch-badge">1</span>
+            )}
+          </button>
+          <button
+            type="button"
+            className="capture-input-voice-toggle"
+            onClick={() => {
+              if (showVoiceSection) {
+                setShowVoiceSection(false);
+              } else {
+                setShowVoiceSection(true);
+                setShowSketchSection(false);
+              }
+            }}
+            disabled={disabled}
+          >
+            {showVoiceSection ? '← Back to text' : '+ Add voice'}
+            {voiceAudio && !showVoiceSection && (
+              <span className="capture-input-voice-badge">1</span>
             )}
           </button>
         </div>

@@ -10,7 +10,7 @@ export interface UseCaptureReturn {
   /** Error message if a request failed, null otherwise */
   error: string | null;
   /** Function to update a capture */
-  updateCapture: (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null) => Promise<void>;
+  updateCapture: (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null, voice_audio?: string | null) => Promise<void>;
   /** Function to delete a capture */
   deleteCapture: (id: number) => Promise<void>;
 }
@@ -64,7 +64,8 @@ export const useCapture = (): UseCaptureReturn => {
     tags?: string[],
     capture_type_id?: number | null,
     capture_status_id?: number | null,
-    sketch_image?: string | null
+    sketch_image?: string | null,
+    voice_audio?: string | null
   ): Promise<void> => {
     if (!content.trim()) {
       return;
@@ -73,7 +74,7 @@ export const useCapture = (): UseCaptureReturn => {
     try {
       setLoading(true);
       setError(null);
-      await capturesService.updateCapture(id, content.trim(), title, tags, capture_type_id, capture_status_id, sketch_image);
+      await capturesService.updateCapture(id, content.trim(), title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio);
     } catch (err) {
       setError('Failed to update capture. Please try again.');
       console.error('Error updating capture:', err);

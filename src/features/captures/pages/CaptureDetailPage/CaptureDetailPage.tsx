@@ -70,12 +70,13 @@ export const CaptureDetailPage = (): ReactElement => {
     tags?: string[],
     capture_type_id?: number | null,
     capture_status_id?: number | null,
-    sketch_image?: string | null
+    sketch_image?: string | null,
+    voice_audio?: string | null
   ): Promise<void> => {
     if (!capture) return;
     
     try {
-      await updateCapture(capture.id, content, title, tags, capture_type_id, capture_status_id, sketch_image);
+      await updateCapture(capture.id, content, title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio);
       // Reload the capture to get updated data
       if (id) {
         try {
@@ -150,6 +151,13 @@ export const CaptureDetailPage = (): ReactElement => {
           </div>
         )}
 
+        {capture.voice_audio && (
+          <div className="capture-detail-voice">
+            <span className="capture-detail-voice-label">Voice memo:</span>
+            <audio src={capture.voice_audio} controls className="capture-detail-voice-audio" />
+          </div>
+        )}
+
         <div className="create-note-page-form">
           <CaptureForm error={updateError || error}>
             <CaptureInput
@@ -162,6 +170,7 @@ export const CaptureDetailPage = (): ReactElement => {
               initialCaptureTypeId={capture.capture_type_id || null}
               initialCaptureStatusId={capture.capture_status_id || null}
               initialSketchImage={capture.sketch_image || null}
+              initialVoiceAudio={capture.voice_audio || null}
               captureId={capture.id}
               hideSubmitButton={true}
               onSubmitHandlerReady={(handler) => {

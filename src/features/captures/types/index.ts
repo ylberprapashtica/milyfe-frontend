@@ -30,6 +30,8 @@ export interface CaptureType {
   name: string;
   /** Symbol representation of the type (e.g., "<<", "<", "0", ">", ">>") */
   symbol: string;
+  /** Human-readable description of when to use this type */
+  description?: string | null;
   /** ISO 8601 timestamp when the type was created */
   created_at: string;
   /** ISO 8601 timestamp when the type was last updated */

@@ -17,3 +17,52 @@
   font-style: italic;
 }
 
+.capture-input-content-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.capture-input-sketch-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: rgba(128, 90, 138, 0.9);
+  background: rgba(128, 90, 138, 0.08);
+  border: 1px solid rgba(128, 90, 138, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: rgba(128, 90, 138, 0.12);
+    border-color: rgba(128, 90, 138, 0.5);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.capture-input-sketch-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(128, 90, 138, 0.4);
+  color: #fff;
+  border-radius: 9px;
+}
+
+.capture-input-sketch-panel {
+  min-height: 320px;
+}
+

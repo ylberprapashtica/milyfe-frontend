@@ -65,6 +65,18 @@ $black: #000000;
   word-wrap: break-word;
 }
 
+.capture-item-sketch {
+  margin-top: 8px;
+}
+
+.capture-item-sketch-thumb {
+  max-width: 120px;
+  max-height: 80px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid rgba($chinese-violet, 0.2);
+}
+
 .capture-item-tags {
   display: flex;
   flex-wrap: wrap;

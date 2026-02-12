@@ -1,0 +1,77 @@
+.sketch-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(128, 90, 138, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(128, 90, 138, 0.2);
+}
+
+.sketch-canvas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sketch-canvas-colors {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.sketch-canvas-color {
+  width: 24px;
+  height: 24px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s, border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    transform: scale(1.1);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &--active {
+    border-color: rgba(128, 90, 138, 0.9);
+    box-shadow: 0 0 0 1px rgba(128, 90, 138, 0.5);
+  }
+}
+
+.sketch-canvas-tool {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid rgba(128, 90, 138, 0.3);
+  border-radius: 4px;
+  background: #fff;
+  color: #5a3d6b;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: rgba(128, 90, 138, 0.08);
+    border-color: rgba(128, 90, 138, 0.5);
+  }
+
+  &--active {
+    background: rgba(128, 90, 138, 0.15);
+    border-color: rgba(128, 90, 138, 0.6);
+  }
+}
+
+.sketch-canvas-wrapper {
+  min-height: 300px;
+
+  canvas,
+  svg {
+    border-radius: 4px;
+  }
+}
+

@@ -122,8 +122,8 @@ export const capturesService = {
    * console.log(`Created capture with ID: ${newCapture.id}`);
    * ```
    */
-  createCapture: async (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null): Promise<Capture> => {
-    const response = await apiClient.post<Capture>('/captures', { content, title, tags, capture_type_id, capture_status_id });
+  createCapture: async (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null): Promise<Capture> => {
+    const response = await apiClient.post<Capture>('/captures', { content, title, tags, capture_type_id, capture_status_id, sketch_image });
     return response.data;
   },
 
@@ -149,8 +149,8 @@ export const capturesService = {
    * console.log(`Updated at: ${updated.updated_at}`);
    * ```
    */
-  updateCapture: async (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null): Promise<Capture> => {
-    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags, capture_type_id, capture_status_id });
+  updateCapture: async (id: number, content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null): Promise<Capture> => {
+    const response = await apiClient.put<Capture>(`/captures/${id}`, { content, title, tags, capture_type_id, capture_status_id, sketch_image });
     return response.data;
   },
 
@@ -174,7 +174,7 @@ export const capturesService = {
   updateCaptureStatus: async (id: number, capture_status_id: number): Promise<Capture> => {
     // First get the current capture to preserve other fields
     const current = await capturesService.getCapture(id);
-    return capturesService.updateCapture(id, current.content, current.title, current.tags, current.capture_type_id, capture_status_id);
+    return capturesService.updateCapture(id, current.content, current.title, current.tags, current.capture_type_id, capture_status_id, current.sketch_image);
   },
 
   /**

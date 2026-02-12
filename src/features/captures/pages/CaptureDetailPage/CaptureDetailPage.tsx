@@ -69,12 +69,13 @@ export const CaptureDetailPage = (): ReactElement => {
     title?: string,
     tags?: string[],
     capture_type_id?: number | null,
-    capture_status_id?: number | null
+    capture_status_id?: number | null,
+    sketch_image?: string | null
   ): Promise<void> => {
     if (!capture) return;
     
     try {
-      await updateCapture(capture.id, content, title, tags, capture_type_id, capture_status_id);
+      await updateCapture(capture.id, content, title, tags, capture_type_id, capture_status_id, sketch_image);
       // Reload the capture to get updated data
       if (id) {
         try {
@@ -160,6 +161,7 @@ export const CaptureDetailPage = (): ReactElement => {
               initialTags={capture.tags?.join(', ') || ''}
               initialCaptureTypeId={capture.capture_type_id || null}
               initialCaptureStatusId={capture.capture_status_id || null}
+              initialSketchImage={capture.sketch_image || null}
               captureId={capture.id}
               hideSubmitButton={true}
               onSubmitHandlerReady={(handler) => {

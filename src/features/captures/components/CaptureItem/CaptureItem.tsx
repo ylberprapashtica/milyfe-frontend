@@ -97,6 +97,15 @@ export const CaptureItem = ({
         <div className="capture-item-text">
           {renderLinks(displayContent, handleLinkClick)}
         </div>
+        {capture.sketch_image && (
+          <div className="capture-item-sketch">
+            <img
+              src={capture.sketch_image}
+              alt="Sketch"
+              className="capture-item-sketch-thumb"
+            />
+          </div>
+        )}
       </div>
 
       {capture.tags && capture.tags.length > 0 && (

@@ -64,6 +64,8 @@ export interface Capture {
   created_at: string;
   /** ISO 8601 timestamp when the capture was last updated */
   updated_at: string;
+  /** Base64 data URL of attached sketch image (optional) */
+  sketch_image?: string | null;
   /** Notes that this note links to (optional, loaded with relationships) */
   links_to?: Capture[];
   /** Notes that link to this note (optional, loaded with relationships) */

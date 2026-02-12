@@ -22,6 +22,7 @@ const TYPE_OPTIONS = [
   { value: 'action', label: 'Action', symbol: '0' },
   { value: 'planning', label: 'Planning', symbol: '>' },
   { value: 'dreaming', label: 'Dreaming', symbol: '>>' },
+  { value: 'eureka', label: 'Eureka', symbol: '!' },
 ] as const;
 
 /**

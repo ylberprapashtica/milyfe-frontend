@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, ReactElement, createContext, useContext } from 'react';
+import { useEffect, useState, useCallback, useRef, ReactElement, createContext, useContext } from 'react';
 import {
   ReactFlow,
   Node,
@@ -12,6 +12,7 @@ import {
   Connection,
   addEdge,
   MarkerType,
+  type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { capturesService } from '@/features/captures/services/captures.service';
@@ -21,6 +22,7 @@ import FloatingEdge from './FloatingEdge';
 import CustomConnectionLine from './CustomConnectionLine';
 import { ConfirmModal } from '@/common/components/ui';
 import { CaptureEditModal } from '@/features/captures/components/CaptureEditModal';
+import { CaptureCreateModal } from '@/features/captures/components/CaptureCreateModal';
 import './GraphView.scss';
 
 /**
@@ -106,6 +108,9 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
   const [edgeToDelete, setEdgeToDelete] = useState<Edge<EdgeData> | null>(null);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [editCaptureId, setEditCaptureId] = useState<number | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
+  const [createPosition, setCreatePosition] = useState<{ x: number; y: number } | null>(null);
+  const reactFlowInstanceRef = useRef<ReactFlowInstance<Node<CaptureNodeData>, Edge<EdgeData>> | null>(null);
 
   /**
    * Handle clicking on an edge to request deletion
@@ -166,6 +171,33 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
   const handleNodeTitleClick = useCallback((captureId: number) => {
     setEditCaptureId(captureId);
     setShowEditModal(true);
+  }, []);
+
+  /**
+   * Store React Flow instance on init (for screenToFlowPosition)
+   */
+  const onInit = useCallback((instance: ReactFlowInstance<Node<CaptureNodeData>, Edge<EdgeData>>) => {
+    reactFlowInstanceRef.current = instance;
+  }, []);
+
+  /**
+   * Handle double-click on pane - open create capture modal at that position
+   */
+  const onPaneClick = useCallback((event: React.MouseEvent) => {
+    if (event.detail !== 2) return;
+    const instance = reactFlowInstanceRef.current;
+    if (!instance?.screenToFlowPosition) return;
+    const position = instance.screenToFlowPosition({ x: event.clientX, y: event.clientY });
+    setCreatePosition({ x: position.x, y: position.y });
+    setShowCreateModal(true);
+  }, []);
+
+  /**
+   * Handle create modal close
+   */
+  const handleCloseCreateModal = useCallback(() => {
+    setShowCreateModal(false);
+    setCreatePosition(null);
   }, []);
 
   /**
@@ -424,6 +456,13 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
     );
   }, [nodes, setNodes, loadGraphData]);
 
+  /**
+   * Handle successful capture creation - reload graph to show new node
+   */
+  const handleCreateSuccess = useCallback(() => {
+    loadGraphData();
+  }, [loadGraphData]);
+
   useEffect(() => {
     loadGraphData();
   }, [loadGraphData]);
@@ -460,6 +499,9 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
           onNodeDragStop={onNodeDragStop}
           onConnect={onConnect}
           onEdgeClick={onEdgeClick}
+          onInit={onInit}
+          onPaneClick={onPaneClick}
+          zoomOnDoubleClick={false}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
@@ -491,6 +533,12 @@ export const GraphView = ({ tagFilter, statusFilter, typeFilter }: GraphViewProp
           onClose={handleCloseEditModal}
           captureId={editCaptureId}
           onUpdateSuccess={handleUpdateSuccess}
+        />
+        <CaptureCreateModal
+          isOpen={showCreateModal}
+          onClose={handleCloseCreateModal}
+          onCreateSuccess={handleCreateSuccess}
+          initialPosition={createPosition ?? undefined}
         />
       </div>
     </NodeTitleClickContext.Provider>

@@ -122,8 +122,22 @@ export const capturesService = {
    * console.log(`Created capture with ID: ${newCapture.id}`);
    * ```
    */
-  createCapture: async (content: string, title?: string, tags?: string[], capture_type_id?: number | null, capture_status_id?: number | null, sketch_image?: string | null): Promise<Capture> => {
-    const response = await apiClient.post<Capture>('/captures', { content, title, tags, capture_type_id, capture_status_id, sketch_image });
+  createCapture: async (
+    content: string,
+    title?: string,
+    tags?: string[],
+    capture_type_id?: number | null,
+    capture_status_id?: number | null,
+    sketch_image?: string | null,
+    graph_x?: number,
+    graph_y?: number
+  ): Promise<Capture> => {
+    const body: Record<string, unknown> = { content, title, tags, capture_type_id, capture_status_id, sketch_image };
+    if (graph_x !== undefined && graph_y !== undefined) {
+      body.graph_x = graph_x;
+      body.graph_y = graph_y;
+    }
+    const response = await apiClient.post<Capture>('/captures', body);
     return response.data;
   },
 

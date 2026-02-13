@@ -107,32 +107,41 @@ export const CapturesPage = (): ReactElement => {
     }
   }, [searchParams]);
 
-  // Filter captures based on search query
+  // Debounce search query (400ms) to avoid excessive API calls while typing
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Filter captures based on debounced search query
+  useEffect(() => {
+    if (!debouncedSearchQuery.trim()) {
       setFilteredCaptures(captures);
       return;
     }
 
     const performSearch = async (): Promise<void> => {
       try {
-        const results = await capturesService.searchCaptures(searchQuery);
+        const results = await capturesService.searchCaptures(debouncedSearchQuery);
         setFilteredCaptures(results);
       } catch (err) {
         console.error('Error searching captures:', err);
         // Fallback to client-side filtering
         const filtered = captures.filter(
           (capture) =>
-            capture.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            capture.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            capture.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+            capture.title?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+            capture.content.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+            capture.tags?.some((tag) => tag.toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
         );
         setFilteredCaptures(filtered);
       }
     };
 
     performSearch();
-  }, [searchQuery, captures]);
+  }, [debouncedSearchQuery, captures]);
 
   /**
    * Handle search input change

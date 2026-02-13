@@ -6,10 +6,14 @@ import { Autocomplete } from '@/common/components/ui/Autocomplete';
 import { TagsAutocomplete } from '@/features/captures/components/TagsAutocomplete';
 import { ProjectAutocomplete, type ProjectSuggestion } from '@/features/projects/components/ProjectAutocomplete';
 import { useCaptureAutocomplete } from '@/features/captures/hooks/useCaptureAutocomplete';
-import { capturesService } from '@/features/captures/services/captures.service';
+import {
+  useCaptureTypes,
+  useCaptureStatuses,
+  useTags,
+  useProjects,
+} from '@/features/captures/contexts/ReferenceDataContext';
 import { projectsService } from '@/features/projects/services/projects.service';
-import type { Project } from '@/features/projects/types';
-import { Capture, CaptureStatus, CaptureType } from '@/features/captures/types';
+import { Capture } from '@/features/captures/types';
 import { SketchCanvas } from '@/features/captures/components/SketchCanvas';
 import type { SketchCanvasRef } from '@/features/captures/components/SketchCanvas';
 import { VoiceRecorder } from '@/features/captures/components/VoiceRecorder';
@@ -103,18 +107,15 @@ export const CaptureInput = ({
   const [captureStatusId, setCaptureStatusId] = useState<string>(initialCaptureStatusId?.toString() || '');
   const [projectId, setProjectId] = useState<string>(initialProjectId?.toString() || '');
   const [projectInputValue, setProjectInputValue] = useState<string>('');
-  const [captureTypes, setCaptureTypes] = useState<CaptureType[]>([]);
-  const [captureStatuses, setCaptureStatuses] = useState<CaptureStatus[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loadingTypes, setLoadingTypes] = useState<boolean>(false);
-  const [loadingStatuses, setLoadingStatuses] = useState<boolean>(false);
-  const [loadingProjects, setLoadingProjects] = useState<boolean>(false);
+  const { captureTypes, loading: loadingTypes } = useCaptureTypes();
+  const { captureStatuses, loading: loadingStatuses } = useCaptureStatuses();
+  const { tags: allTags } = useTags();
+  const { projects, loading: loadingProjects, reloadProjects } = useProjects();
   const [projectSuggestions, setProjectSuggestions] = useState<ProjectSuggestion[]>([]);
   const [projectSuggestionsVisible, setProjectSuggestionsVisible] = useState<boolean>(false);
   const [projectSelectedIndex, setProjectSelectedIndex] = useState<number>(0);
   const [pendingNewProject, setPendingNewProject] = useState<{ name: string } | null>(null);
   const [projectDescription, setProjectDescription] = useState<string>('');
-  const [allTags, setAllTags] = useState<string[]>([]);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [tagSuggestionsVisible, setTagSuggestionsVisible] = useState<boolean>(false);
   const [tagSelectedIndex, setTagSelectedIndex] = useState<number>(0);
@@ -123,68 +124,16 @@ export const CaptureInput = ({
   const tagsWrapperRef = useRef<HTMLDivElement | null>(null);
   const projectWrapperRef = useRef<HTMLDivElement | null>(null);
 
-  // Load capture types, statuses, and tags on mount
+  // Set default status to 'fleeting' once when statuses first load and no initial status provided
+  const hasSetDefaultStatus = useRef(false);
   useEffect(() => {
-    const loadTypes = async (): Promise<void> => {
-      try {
-        setLoadingTypes(true);
-        const types = await capturesService.getCaptureTypes();
-        setCaptureTypes(types);
-      } catch (err) {
-        console.error('Error loading capture types:', err);
-      } finally {
-        setLoadingTypes(false);
-      }
-    };
-    
-    const loadStatuses = async (): Promise<void> => {
-      try {
-        setLoadingStatuses(true);
-        const statuses = await capturesService.getCaptureStatuses();
-        setCaptureStatuses(statuses);
-        // Set default to 'fleeting' if no initial status is provided
-        if (!initialCaptureStatusId && statuses.length > 0) {
-          const fleetingStatus = statuses.find(s => s.name === 'fleeting');
-          if (fleetingStatus) {
-            setCaptureStatusId(fleetingStatus.id.toString());
-          }
-        }
-      } catch (err) {
-        console.error('Error loading capture statuses:', err);
-      } finally {
-        setLoadingStatuses(false);
-      }
-    };
-    
-    const loadTags = async (): Promise<void> => {
-      try {
-        const tagList = await capturesService.getTags();
-        setAllTags(tagList.map((t) => t.name));
-      } catch (err) {
-        console.error('Error loading tags:', err);
-      }
-    };
-
-    loadTypes();
-    loadStatuses();
-    loadTags();
-  }, [initialCaptureStatusId]);
-
-  useEffect(() => {
-    const loadProjects = async (): Promise<void> => {
-      try {
-        setLoadingProjects(true);
-        const projectList = await projectsService.getProjects();
-        setProjects(projectList);
-      } catch (err) {
-        console.error('Error loading projects:', err);
-      } finally {
-        setLoadingProjects(false);
-      }
-    };
-
-    loadProjects();
-  }, []);
+    if (hasSetDefaultStatus.current || initialCaptureStatusId || captureStatuses.length === 0) return;
+    const fleetingStatus = captureStatuses.find((s) => s.name === 'fleeting');
+    if (fleetingStatus) {
+      setCaptureStatusId(fleetingStatus.id.toString());
+      hasSetDefaultStatus.current = true;
+    }
+  }, [initialCaptureStatusId, captureStatuses]);
 
   // Sync projectInputValue when projects load and we have projectId
   useEffect(() => {
@@ -518,7 +467,7 @@ export const CaptureInput = ({
         try {
           const created = await projectsService.createProject(pendingNewProject.name, projectDescription.trim() || null);
           projId = created.id;
-          setProjects((prev) => [...prev, created]);
+          reloadProjects();
           setProjectId(created.id.toString());
           setPendingNewProject(null);
           setProjectDescription('');
@@ -616,7 +565,7 @@ export const CaptureInput = ({
       onSubmitHandlerReady(handleSubmit);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onSubmitHandlerReady, content, title, tags, captureTypeId, captureStatusId, projectId, sketchImage, voiceAudio, showSketchSection, showVoiceSection, disabled]);
+  }, [onSubmitHandlerReady, content, title, tags, captureTypeId, captureStatusId, projectId, sketchImage, voiceAudio, showSketchSection, showVoiceSection, disabled, pendingNewProject, projectDescription]);
 
   // Notify parent of form validity changes
   useEffect(() => {

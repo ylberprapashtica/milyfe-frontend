@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { PublicRoute } from '@/features/auth/components/PublicRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { RegisterPage } from '@/features/auth/pages/RegisterPage';
+import { ReferenceDataProvider, ReferenceDataPreload } from '@/features/captures/contexts/ReferenceDataContext';
 import { CreateNotePage } from '@/features/captures/pages/CreateNotePage';
 import { CapturesPage } from '@/features/captures/pages/CapturesPage';
 import { CaptureDetailPage } from '@/features/captures/pages/CaptureDetailPage';
@@ -40,8 +41,10 @@ function App(): ReactElement {
         }}
       >
         <AuthProvider>
-          <div className="App">
-            <Routes>
+          <ReferenceDataProvider>
+            <ReferenceDataPreload />
+            <div className="App">
+              <Routes>
               <Route
                 path="/login"
                 element={
@@ -82,8 +85,9 @@ function App(): ReactElement {
                   </ProtectedRoute>
                 }
               />
-            </Routes>
-          </div>
+              </Routes>
+            </div>
+          </ReferenceDataProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

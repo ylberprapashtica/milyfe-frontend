@@ -1,6 +1,5 @@
-import { useState, useEffect, ReactElement } from 'react';
-import { projectsService } from '@/features/projects/services/projects.service';
-import type { Project } from '@/features/projects/types';
+import { useState, ReactElement } from 'react';
+import { useProjects } from '@/features/captures/contexts/ReferenceDataContext';
 import './GraphFilters.scss';
 
 /**
@@ -65,19 +64,7 @@ export const GraphFilters = ({
   onClearFilters,
 }: GraphFiltersProps): ReactElement => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-
-  useEffect(() => {
-    const load = async (): Promise<void> => {
-      try {
-        const list = await projectsService.getProjects();
-        setProjects(list);
-      } catch (err) {
-        console.error('Error loading projects for filters:', err);
-      }
-    };
-    load();
-  }, []);
+  const { projects } = useProjects();
 
   /**
    * Handle status checkbox change

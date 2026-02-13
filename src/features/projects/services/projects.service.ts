@@ -39,4 +39,15 @@ export const projectsService = {
     });
     return response.data;
   },
+
+  /**
+   * Update graph layouts for multiple projects in one request.
+   * layouts: { [projectId: string]: { x, y, width, height } }
+   */
+  updateProjectLayouts: async (
+    layouts: Record<string, { x: number; y: number; width: number; height: number }>
+  ): Promise<Project[]> => {
+    const response = await apiClient.put<Project[]>('/projects/layouts', { layouts });
+    return response.data;
+  },
 };

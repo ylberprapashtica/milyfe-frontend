@@ -39,9 +39,27 @@ export const capturesService = {
    * console.log(`Found ${captures.length} captures`);
    * ```
    */
-  getCaptures: async (): Promise<Capture[]> => {
-    const response = await apiClient.get<Capture[]>('/captures');
-    return response.data;
+  /**
+   * Fetch captures in batches (paginated). Merges all pages and returns one array.
+   * Uses per_page=50 by default to avoid one large response.
+   */
+  getCaptures: async (options?: { perPage?: number }): Promise<Capture[]> => {
+    const perPage = options?.perPage ?? 50;
+    const all: Capture[] = [];
+    let page = 1;
+    let lastPage = 1;
+    do {
+      const response = await apiClient.get<{ data: Capture[]; meta: { last_page: number } }>('/captures', {
+        params: { page, per_page: perPage },
+      });
+      const payload = response.data as { data: Capture[]; meta: { last_page: number } };
+      const data = payload.data ?? [];
+      const meta = payload.meta;
+      all.push(...data);
+      lastPage = meta?.last_page ?? 1;
+      page += 1;
+    } while (page <= lastPage);
+    return all;
   },
 
   /**

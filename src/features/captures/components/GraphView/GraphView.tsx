@@ -164,6 +164,9 @@ export const GraphView = ({
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [createPosition, setCreatePosition] = useState<{ x: number; y: number } | null>(null);
   const reactFlowInstanceRef = useRef<ReactFlowInstance<GraphNode, Edge<EdgeData>> | null>(null);
+  const pendingLayoutsRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
+  const layoutFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const LAYOUT_DEBOUNCE_MS = 500;
 
   /**
    * Handle clicking on an edge to request deletion
@@ -263,7 +266,7 @@ export const GraphView = ({
   }, [projectView]);
 
   /**
-   * Handle nodes change: persist project resize/position to API (and fallback to localStorage for backward compat)
+   * Handle nodes change: accumulate project layout updates and flush in one API call (debounced).
    */
   const handleNodesChange = useCallback(
     (changes: Parameters<typeof onNodesChange>[0]) => {
@@ -290,11 +293,21 @@ export const GraphView = ({
           layout = { x: ch.position.x, y: ch.position.y, width: w, height: h };
         }
         if (layout) {
-          const id = Number(projId);
-          if (!Number.isNaN(id)) {
-            projectsService.updateProjectLayout(id, layout.x, layout.y, layout.width, layout.height).catch((err) => {
-              console.error('Error saving project layout:', err);
-            });
+          const idStr = String(projId);
+          if (!Number.isNaN(Number(projId))) {
+            pendingLayoutsRef.current[idStr] = layout;
+            if (layoutFlushTimeoutRef.current === null) {
+              layoutFlushTimeoutRef.current = setTimeout(() => {
+                const toSend = { ...pendingLayoutsRef.current };
+                pendingLayoutsRef.current = {};
+                layoutFlushTimeoutRef.current = null;
+                if (Object.keys(toSend).length > 0) {
+                  projectsService.updateProjectLayouts(toSend).catch((err) => {
+                    console.error('Error saving project layouts:', err);
+                  });
+                }
+              }, LAYOUT_DEBOUNCE_MS);
+            }
           }
         }
       }
@@ -670,6 +683,15 @@ export const GraphView = ({
   useEffect(() => {
     loadGraphData();
   }, [loadGraphData, refreshTrigger]);
+
+  useEffect(() => {
+    return () => {
+      if (layoutFlushTimeoutRef.current !== null) {
+        clearTimeout(layoutFlushTimeoutRef.current);
+        layoutFlushTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   if (loading) {
     return (

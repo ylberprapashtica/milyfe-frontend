@@ -1,4 +1,4 @@
-import React, { ReactNode, ReactElement, useState, useEffect, useCallback } from 'react';
+import React, { ReactNode, ReactElement, useState, useEffect, useCallback, useRef } from 'react';
 import { AuthContext, AuthContextType } from './AuthContext';
 import { authService } from '@/features/auth/services/auth.service';
 import { getToken } from '@/common/lib/storage';
@@ -32,6 +32,8 @@ export interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps): ReactElement => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  /** Prevents duplicate getCurrentUser in React Strict Mode (double mount) */
+  const loadStartedRef = useRef<boolean>(false);
 
   /**
    * Load the current user if a token exists
@@ -63,8 +65,10 @@ export const AuthProvider = ({ children }: AuthProviderProps): ReactElement => {
     setUser(null);
   }, []);
 
-  // Load user on mount
+  // Load user on mount (once; ref prevents double call in Strict Mode)
   useEffect(() => {
+    if (loadStartedRef.current) return;
+    loadStartedRef.current = true;
     loadUser().catch((error) => {
       console.error('Error loading user:', error);
       setLoading(false);

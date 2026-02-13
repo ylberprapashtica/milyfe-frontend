@@ -3,6 +3,14 @@ import { capturesService } from '@/features/captures/services/captures.service';
 import { Capture } from '@/features/captures/types';
 
 /**
+ * Options for the useCaptures hook
+ */
+export interface UseCapturesOptions {
+  /** Whether to load captures on mount. Default true. Set false for create-only pages (captures load on-demand when typing [[) */
+  loadOnMount?: boolean;
+}
+
+/**
  * Return type for the useCaptures hook
  */
 export interface UseCapturesReturn {
@@ -39,7 +47,8 @@ export interface UseCapturesReturn {
  * };
  * ```
  */
-export const useCaptures = (): UseCapturesReturn => {
+export const useCaptures = (options?: UseCapturesOptions): UseCapturesReturn => {
+  const { loadOnMount = true } = options ?? {};
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +93,9 @@ export const useCaptures = (): UseCapturesReturn => {
       setLoading(true);
       setError(null);
       await capturesService.createCapture(content.trim(), title, tags, capture_type_id, capture_status_id, sketch_image, voice_audio, graph_x, graph_y, project_id);
-      await loadCaptures();
+      if (loadOnMount) {
+        await loadCaptures();
+      }
     } catch (err) {
       setError('Failed to save capture. Please try again.');
       console.error('Error creating capture:', err);
@@ -92,12 +103,14 @@ export const useCaptures = (): UseCapturesReturn => {
     } finally {
       setLoading(false);
     }
-  }, [loadCaptures]);
+  }, [loadCaptures, loadOnMount]);
 
-  // Load captures on mount
+  // Load captures on mount only when loadOnMount is true
   useEffect(() => {
-    loadCaptures();
-  }, [loadCaptures]);
+    if (loadOnMount) {
+      loadCaptures();
+    }
+  }, [loadCaptures, loadOnMount]);
 
   return {
     captures,

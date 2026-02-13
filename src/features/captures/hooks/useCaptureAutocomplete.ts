@@ -202,23 +202,13 @@ export const useCaptureAutocomplete = (): UseCaptureAutocompleteReturn => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   /**
-   * Search for matching captures
+   * Search for matching captures. Only fetches when user has typed at least one letter after [[
    */
   const searchCaptures = useCallback(async (searchQuery: string): Promise<void> => {
     if (!searchQuery.trim()) {
-      // If query is empty, show all captures (limited)
-      try {
-        setLoading(true);
-        const allCaptures = await capturesService.getCaptures();
-        // Limit to first 10 for autocomplete
-        setSuggestions(allCaptures.slice(0, 10));
-        setSelectedIndex(0);
-      } catch (err) {
-        console.error('Error fetching captures:', err);
-        setSuggestions([]);
-      } finally {
-        setLoading(false);
-      }
+      // Don't fetch until user types at least one letter
+      setSuggestions([]);
+      setSelectedIndex(0);
       return;
     }
 

@@ -22,7 +22,7 @@ import './CreateNotePage.scss';
  * ```
  */
 export const CreateNotePage = (): ReactElement => {
-  const { loading, error, createCapture } = useCaptures();
+  const { loading, error, createCapture } = useCaptures({ loadOnMount: false });
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isFormValid, setIsFormValid] = useState<boolean>(false);
   const submitHandlerRef = useRef<(() => Promise<void>) | null>(null);

@@ -115,4 +115,6 @@ export interface GraphData {
     /** Database ID of the note_links record (optional for new edges) */
     linkId?: number;
   }>;
+  /** Project container layouts (position and dimensions) keyed by project ID */
+  project_layouts?: Record<string, { x: number | null; y: number | null; width: number | null; height: number | null }>;
 }

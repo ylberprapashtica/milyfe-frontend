@@ -20,4 +20,23 @@ export const projectsService = {
   deleteProject: async (id: number): Promise<void> => {
     await apiClient.delete(`/projects/${id}`);
   },
+
+  /**
+   * Update the graph layout (position and dimensions) of a project.
+   */
+  updateProjectLayout: async (
+    id: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ): Promise<Project> => {
+    const response = await apiClient.put<Project>(`/projects/${id}/layout`, {
+      x,
+      y,
+      width,
+      height,
+    });
+    return response.data;
+  },
 };

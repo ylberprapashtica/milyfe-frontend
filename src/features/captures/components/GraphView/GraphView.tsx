@@ -17,6 +17,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { capturesService } from '@/features/captures/services/captures.service';
+import { projectsService } from '@/features/projects/services/projects.service';
 import { GraphData } from '@/features/captures/types';
 import { CaptureNode, CaptureNodeData } from './CaptureNode';
 import { ProjectNode } from './ProjectNode';
@@ -114,6 +115,7 @@ const GRID_GAP = 40;
 
 type ProjectLayout = { x: number; y: number; width: number; height: number };
 
+/** Fallback: read project layouts from localStorage (backward compatibility when API has no project_layouts). */
 function getProjectLayouts(): Record<string, ProjectLayout> {
   try {
     const stored = localStorage.getItem(PROJECT_LAYOUTS_KEY);
@@ -121,12 +123,6 @@ function getProjectLayouts(): Record<string, ProjectLayout> {
   } catch {
     return {};
   }
-}
-
-function saveProjectLayout(projectId: string | number, layout: ProjectLayout): void {
-  const layouts = getProjectLayouts();
-  layouts[String(projectId)] = layout;
-  localStorage.setItem(PROJECT_LAYOUTS_KEY, JSON.stringify(layouts));
 }
 
 /**
@@ -267,7 +263,7 @@ export const GraphView = ({
   }, [projectView]);
 
   /**
-   * Handle nodes change: wrap to persist project resize/position to localStorage
+   * Handle nodes change: persist project resize/position to API (and fallback to localStorage for backward compat)
    */
   const handleNodesChange = useCallback(
     (changes: Parameters<typeof onNodesChange>[0]) => {
@@ -278,7 +274,7 @@ export const GraphView = ({
         if (node?.type !== 'project' || !node.data) continue;
 
         const projId = (node.data as { projectId?: string }).projectId;
-        if (!projId) continue;
+        if (!projId || projId === 'none') continue;
 
         let layout: ProjectLayout | null = null;
         if (ch.type === 'dimensions' && ch.dimensions) {
@@ -293,7 +289,14 @@ export const GraphView = ({
           const h = (node.style?.height as number) ?? 200;
           layout = { x: ch.position.x, y: ch.position.y, width: w, height: h };
         }
-        if (layout) saveProjectLayout(projId, layout);
+        if (layout) {
+          const id = Number(projId);
+          if (!Number.isNaN(id)) {
+            projectsService.updateProjectLayout(id, layout.x, layout.y, layout.width, layout.height).catch((err) => {
+              console.error('Error saving project layout:', err);
+            });
+          }
+        }
       }
     },
     [onNodesChange, nodes]
@@ -525,7 +528,11 @@ export const GraphView = ({
       let finalEdges = filteredEdges;
 
       if (projectView) {
-        const projectLayouts = getProjectLayouts();
+        // Prefer project_layouts from API; fallback to localStorage for backward compatibility
+        const projectLayouts: Record<string, ProjectLayout | { x: number | null; y: number | null; width: number | null; height: number | null }> = {
+          ...getProjectLayouts(),
+          ...(graphData.project_layouts ?? {}),
+        };
         const projectKey = (id: number | null) => (id === null ? 'none' : String(id));
 
         // Group nodes by project_id
@@ -549,8 +556,22 @@ export const GraphView = ({
 
         const projectNodes: GraphNode[] = [];
         const childNodes: GraphNode[] = [];
+
+        // First pass: collect projects with saved layouts to find the topmost Y (only when y is a number)
+        let minYAmongSaved = Infinity;
+        const projectEntries = Array.from(byProject.entries()).filter(([k]) => k !== 'none');
+        for (const [projKey] of projectEntries) {
+          const saved = projectLayouts[projKey];
+          if (saved != null && typeof (saved as ProjectLayout).y === 'number') {
+            minYAmongSaved = Math.min(minYAmongSaved, (saved as ProjectLayout).y);
+          }
+        }
+        if (minYAmongSaved === Infinity) minYAmongSaved = 0;
+
         let col = 0;
         let row = 0;
+        let newProjectCol = 0;
+        let newProjectRow = 0;
         let maxY = 0;
 
         // Only create project containers for actual projects (skip 'none')
@@ -575,11 +596,14 @@ export const GraphView = ({
 
           const saved = projectLayouts[projKey];
           const width = saved?.width ?? Math.max(maxX - minX + GRID_PADDING * 2, 250);
-          const height = saved?.height ?? Math.max(maxYChild - minY + GRID_PADDING * 2, 200);
+          const height = saved?.height ?? Math.max(maxYChild - minY + GRID_PADDING * 2, 250);
 
           const projNodeId = `project-${projKey}`;
-          const projectX = saved?.x ?? col * (width + GRID_GAP);
-          const projectY = saved?.y ?? row * (height + GRID_GAP);
+          // New projects (no saved layout, or layout has no position) go at the top, above the highest existing project
+          const hasSavedPosition = saved != null && typeof (saved as ProjectLayout).x === 'number' && typeof (saved as ProjectLayout).y === 'number';
+          const isNewProject = !hasSavedPosition;
+          const projectX = saved?.x ?? (isNewProject ? newProjectCol * (width + GRID_GAP) : col * (width + GRID_GAP));
+          const projectY = saved?.y ?? (isNewProject ? minYAmongSaved - (newProjectRow + 1) * (height + GRID_GAP) : row * (height + GRID_GAP));
 
           projectNodes.push({
             id: projNodeId,
@@ -606,10 +630,18 @@ export const GraphView = ({
             });
           }
 
-          col++;
-          if (col >= GRID_COLS) {
-            col = 0;
-            row++;
+          if (isNewProject) {
+            newProjectCol++;
+            if (newProjectCol >= GRID_COLS) {
+              newProjectCol = 0;
+              newProjectRow++;
+            }
+          } else {
+            col++;
+            if (col >= GRID_COLS) {
+              col = 0;
+              row++;
+            }
           }
           maxY = Math.max(maxY, projectY + height);
         }
